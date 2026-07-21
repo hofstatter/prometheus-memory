@@ -17,6 +17,30 @@ the titan who brought the **fire of knowledge** to humanity. Mnemosyne stores
 (memory); Prometheus transforms raw data into **actionable knowledge**
 (persona, skills, diagrams).
 
+## 🧠 Your Agents' Second Brain
+
+**One brain, many agents.** Prometheus Memory works as a **shared second
+brain** for all your AI agents. OpenCode, Claude Code, Cursor, Codex and
+custom agents read and write to the **same memory** via MCP. A decision made
+by agent A in the morning is available to agent B in the afternoon — nothing
+is lost between sessions, tools or machines.
+
+### 🔁 Built for Loop-Agents
+
+Designed for **continuously running loop agents** (daily triage, monitoring,
+24/7 automations): each loop iteration recalls what previous ones learned
+(`mnemosyne recall`) and stores new facts when done (`mnemosyne remember`).
+The L0→L3 pipeline consolidates everything automatically — every 6 hours
+facts become scenes, weekly they become persona and skills. The agent
+literally **gets smarter with every cycle**, with zero human intervention.
+
+## Use Cases
+
+- 🔁 **Loop-agents 24/7** — daily triage, X/Twitter monitors, watchers that learn from every run
+- 🤝 **Multi-agent teams** — shared context across agents with different roles
+- 📅 **Long-running projects** — dozens of sessions, zero context loss
+- 🛠️ **Multiple AI tools** — one memory layer for your entire stack
+
 ## Features
 
 - 🔍 **Hierarchical Timeline** — L3→L2→L1 drill-down, sidebar with projects/dates/stats
@@ -147,7 +171,7 @@ See [COMPARISON.md](COMPARISON.md) — Mnemosyne vs MemPalace vs TencentDB vs Pr
 
 ## Author
 
-**Herbert Hofstatter** — [@hofstatter](https://github.com/hofstatter)
+**Herbert Hofstatter** — [@hofstatter](https://github.com/hofstatter) · [X @hofstatter](https://x.com/hofstatter)
 
 ## License
 

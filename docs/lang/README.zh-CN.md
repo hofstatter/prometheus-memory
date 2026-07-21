@@ -16,6 +16,29 @@
 是将**知识之火**带给人类的泰坦。Mnemosyne 负责存储（记忆），
 Prometheus 则将原始数据转化为**可执行的知识**（用户画像、技能、图表）。
 
+## 🧠 智能体的第二大脑
+
+**一个大脑，多个智能体。** Prometheus Memory 充当所有 AI 智能体的
+**共享第二大脑**。OpenCode、Claude Code、Cursor、Codex 以及自定义智能体
+通过 MCP 读写**同一份记忆**。智能体 A 早上做出的决策，智能体 B 下午即可使用
+—— 在会话、工具或机器之间，一切都不会丢失。
+
+### 🔁 为循环智能体而生
+
+专为**持续运行的循环智能体**（每日分诊、监控、24/7 自动化）设计：
+每次循环迭代都会回忆之前学到的东西（`mnemosyne recall`），
+并在结束时存储新的事实（`mnemosyne remember`）。
+L0→L3 流水线会自动整合一切 —— 每 6 小时事实汇集成场景，
+每周汇集成用户画像和技能。智能体切实地**在每个周期变得更聪明**，
+无需任何人工干预。
+
+## 使用场景
+
+- 🔁 **24/7 循环智能体** — 每日分诊、X/Twitter 监控、从每次运行中学习的观察者
+- 🤝 **多智能体团队** — 不同角色的智能体共享上下文
+- 📅 **长期项目** — 数十次会话，零上下文丢失
+- 🛠️ **多种 AI 工具** — 为整个技术栈提供统一记忆层
+
 ## 功能特性
 
 - 🔍 **层级时间线** — L3→L2→L1 逐层钻取，侧边栏含项目/日期/统计
@@ -145,7 +168,7 @@ python3 web/app.py     # http://localhost:8777
 
 ## 作者
 
-**Herbert Hofstatter** — [@hofstatter](https://github.com/hofstatter)
+**Herbert Hofstatter** — [@hofstatter](https://github.com/hofstatter) · [X @hofstatter](https://x.com/hofstatter)
 
 ## 许可证
 
