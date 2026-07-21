@@ -190,6 +190,8 @@ def import_url():
         return jsonify({"error": "url required"}), 400
 
     result = extract_from_url(url)
+    if result.get("source") == "error":
+        return jsonify({"error": result["text"]}), 400
     safe_title = re.sub(r'[^\w\s-]', '', result["title"])[:60].strip()
     filename = f"{safe_title or 'nota'}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
 
