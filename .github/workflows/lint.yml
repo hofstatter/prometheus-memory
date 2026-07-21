@@ -1,0 +1,24 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile check
+        run: python3 -m py_compile scripts/*.py web/*.py
+      - name: Shell check
+        run: bash -n setup.sh
+      - name: Secret scan (padrões comuns)
+        run: |
+          ! grep -rE "sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|gsk_[a-zA-Z0-9]{20,}|xai-[a-zA-Z0-9]{20,}" \
+            --include="*.py" --include="*.md" --include="*.sh" --include="*.html" . \
+            || (echo "❌ Possível secret commitado!" && exit 1)

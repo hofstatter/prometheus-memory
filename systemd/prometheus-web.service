@@ -1,0 +1,15 @@
+[Unit]
+Description=Prometheus Memory — Web UI (L0→L3 + RAG + Notes + Editor)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/prometheus-memory/web
+Environment="PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=-%h/prometheus-memory/.env
+ExecStart=/usr/bin/python3 %h/prometheus-memory/web/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

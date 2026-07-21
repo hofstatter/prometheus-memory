@@ -1,0 +1,15 @@
+Prometheus Memory
+Copyright (c) 2026 Herbert Hofstatter
+
+This project is built on top of and gives credit to:
+
+1. Mnemosyne — https://github.com/abdiasrj/mnemosyne
+   Copyright (c) 2026 Abdias J — MIT License
+   Used as the memory engine (BEAM architecture, SQLite storage, MCP server).
+   Consumed as an external dependency; no Mnemosyne source code is vendored
+   in this repository.
+
+2. TencentDB-Agent-Memory — https://github.com/TencentDB/TencentDB-Agent-Memory
+   Copyright (c) Tencent — MIT License
+   Architectural inspiration for the L0→L3 memory pyramid, Mermaid Canvas
+   (symbolic compression) and tool-output offloading (refs/*.md).
