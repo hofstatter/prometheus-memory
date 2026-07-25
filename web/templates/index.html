@@ -329,6 +329,11 @@ let allMemories=[],currentView='list';
     document.addEventListener('keydown', function(e){
       if(e.key === 'Enter' && document.getElementById('login-modal')?.style.display === 'flex') doLogin();
     });
+    // Checa sessão ao carregar: se a API exigir auth, abre o modal direto
+    _fetch('/api/auth/check', {headers: {'Authorization': 'Bearer ' + (localStorage.getItem('prometheus_session') || '')}})
+      .then(r => r.json())
+      .then(d => { if(!d.authenticated) showLogin(); })
+      .catch(() => {});
   });
 })();
 
