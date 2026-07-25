@@ -89,6 +89,8 @@ def login():
 
 @auth_bp.get("/api/auth/check")
 def check():
+    if not auth_required():
+        return jsonify({"authenticated": True})
     ok = _valid_credential(request.headers.get("Authorization", ""))
     return jsonify({"authenticated": ok})
 
