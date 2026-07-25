@@ -96,30 +96,26 @@ L0→L3 流水线会自动整合一切 —— 每 6 小时事实汇集成场景�
 ```bash
 git clone https://github.com/hofstatter/prometheus-memory.git
 cd prometheus-memory
-bash setup.sh
+python setup.py          # 通用：Windows / macOS / Linux / 树莓派
+# 或：bash setup.sh      （Unix 封装）
 ```
 
-`setup.sh` 会安装依赖、复制流水线脚本、安装 auto-memory 技能、
-创建 cron 任务并启用 Web UI 的 systemd 服务。
+安装程序会自动检测操作系统/架构，询问您的**语言**（en/pt/es/zh），安装依赖，
+并按平台注册 Web UI（Linux 使用 systemd，macOS 使用 launchd，Windows 提供任务计划程序说明）。
 
-然后配置你的密钥：
+### 支持的平台
 
-```bash
-nano ~/prometheus-memory/.env   # DEEPSEEK_API_KEY 必填
-systemctl --user restart prometheus-web
-```
+| 平台 | 状态 |
+|---|---|
+| Linux x86_64 | ✅ |
+| Linux ARM64 / 树莓派 5 | ✅ |
+| macOS（Intel + Apple Silicon） | ✅ |
+| Windows 10/11（x64） | ✅ |
 
-访问：**http://localhost:8777**
+### 界面语言 🌐
 
-### 手动安装
-
-```bash
-pip install "mnemosyne-memory[all]>=3.12"
-pip install -r requirements.txt
-cp .env.example .env   # 编辑填入你的密钥
-set -a; . ./.env; set +a
-python3 web/app.py     # http://localhost:8777
-```
+Web 界面会自动检测浏览器语言——**English、Português、Español、中文**——并可通过顶部的
+🌐 选择器随时切换（按浏览器保存）。在 `.env` 中设置 `PROMETHEUS_LANG` 可强制默认语言。
 
 ## 配置
 
