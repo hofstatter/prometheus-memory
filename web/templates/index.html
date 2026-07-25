@@ -790,7 +790,7 @@ function renderGraph(){
     };
   });
 
-  graphInstance=new Graph({container:'g6-canvas',width:cw,height:ch,autoFit:'view',animation:true,data:{nodes,edges},
+  graphInstance=new Graph({container:'g6-canvas',width:cw,height:ch,autoFit:'view',animation:false,data:{nodes,edges},
     node:{
       type:d=>d.data.type==='project'?'circle':'circle',
       style:{
