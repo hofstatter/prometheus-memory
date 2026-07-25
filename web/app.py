@@ -25,7 +25,9 @@ DEFAULT_PROJECT = os.environ.get("PROMETHEUS_PROJECT", "geral")
 app = Flask(__name__, template_folder=str(SRC_DIR / "templates"), static_folder=str(SRC_DIR / "static"))
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
-from auth_guard import require_token_if_exposed
+from auth_guard import require_token_if_exposed, auth_bp
+
+app.register_blueprint(auth_bp)
 
 
 @app.after_request

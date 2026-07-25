@@ -107,9 +107,22 @@
     <button onclick="showCanvas()" id="btn-canvas" class="btn-inactive">📐 Canvas</button>
     <button onclick="showRAG()" id="btn-rag" class="btn-inactive">📄 RAG</button>
     <button onclick="showNotes()" id="btn-notes" class="btn-inactive">📝 Notes</button>
-    <button onclick="setApiToken()" id="btn-token" class="btn-inactive" title="Token de acesso (escritas)">🔑</button>
+    <button onclick="authAction()" id="btn-token" class="btn-inactive" title="Login">🔑</button>
     <span class="count" id="memory-count">carregando...</span>
   </nav>
+
+  <div id="login-modal" style="display:none;position:fixed;inset:0;background:rgba(5,5,10,0.75);backdrop-filter:blur(6px);z-index:99999;align-items:center;justify-content:center">
+    <div style="background:var(--surface-2);border:1px solid var(--hairline-strong);border-radius:var(--radius-lg);padding:28px;width:340px;box-shadow:0 24px 60px rgba(0,0,0,0.7);animation:modalIn 200ms var(--ease-out)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:22px">⚡</span>
+        <span style="font-size:16px;font-weight:600;color:var(--ink)">Prometheus Memory</span>
+      </div>
+      <p style="font-size:12px;color:var(--ink-muted);margin-bottom:16px">Área protegida — entre com a senha para continuar. A sessão dura 30 dias neste navegador.</p>
+      <input type="password" id="login-password" placeholder="Senha" autocomplete="current-password" style="width:100%;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px 12px;color:var(--ink);font-size:14px;outline:none;margin-bottom:10px">
+      <div id="login-error" style="color:#ef4444;font-size:12px;min-height:16px;margin-bottom:8px"></div>
+      <button onclick="doLogin()" class="btn-primary" style="width:100%">Entrar</button>
+    </div>
+  </div>
 
   <main style="display:flex;gap:0;padding:0;max-width:100%">
     <aside id="sidebar" style="width:260px;min-width:260px;background:var(--surface-1);border-right:1px solid var(--hairline);padding:20px 16px;overflow-y:auto;max-height:calc(100vh - 56px);position:sticky;top:56px">
@@ -263,37 +276,60 @@ mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'strict',themeV
 
 let allMemories=[],currentView='list';
 
-// ── Token de acesso (rotas de escrita quando bind exposto) ──
+// ── Auth: login por senha (sessão 30d) + token legado ──
 (function(){
   const _fetch = window.fetch.bind(window);
   window.fetch = function(url, opts){
     opts = opts || {};
-    const token = localStorage.getItem('prometheus_token') || '';
+    const token = localStorage.getItem('prometheus_session') || localStorage.getItem('prometheus_token') || '';
     if(token && typeof url === 'string' && url.startsWith('/api/')){
       opts.headers = Object.assign({}, opts.headers, {'Authorization': 'Bearer ' + token});
     }
     return _fetch(url, opts).then(function(resp){
-      if(resp.status === 401 && !window._tokenPrompted){
-        window._tokenPrompted = true;
-        setTimeout(setApiToken, 300);
-      }
+      if(resp.status === 401){ showLogin(); }
       return resp;
     });
   };
-  window.setApiToken = function(){
-    const cur = localStorage.getItem('prometheus_token') || '';
-    const t = prompt('Token de acesso para ações de escrita (importar nota, editar, deletar, upload).\nFica salvo só neste navegador (localStorage).\n\nDeixe vazio para remover.', cur ? '(configurado)' : '');
-    if(t === null){ window._tokenPrompted = false; return; }
-    if(t === '' || t === '(configurado)'){ localStorage.removeItem('prometheus_token'); }
-    else { localStorage.setItem('prometheus_token', t); }
-    window._tokenPrompted = false;
-    updateTokenIcon();
+
+  window.showLogin = function(){
+    const m = document.getElementById('login-modal');
+    if(m) m.style.display = 'flex';
+  };
+  window.hideLogin = function(){
+    const m = document.getElementById('login-modal');
+    if(m) m.style.display = 'none';
+  };
+  window.doLogin = async function(){
+    const pwd = document.getElementById('login-password').value;
+    const err = document.getElementById('login-error');
+    err.textContent = '';
+    try{
+      const r = await _fetch('/api/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password: pwd})});
+      const d = await r.json();
+      if(!r.ok){ err.textContent = d.error || 'Falha no login'; return; }
+      localStorage.setItem('prometheus_session', d.token);
+      localStorage.removeItem('prometheus_token');
+      document.getElementById('login-password').value = '';
+      hideLogin();
+      updateTokenIcon();
+      location.reload();
+    }catch(e){ err.textContent = 'Erro de rede'; }
+  };
+  window.authAction = function(){
+    if(localStorage.getItem('prometheus_session')){
+      if(confirm('Sair da sessão?')){ localStorage.removeItem('prometheus_session'); updateTokenIcon(); location.reload(); }
+    } else { showLogin(); }
   };
   window.updateTokenIcon = function(){
     const b = document.getElementById('btn-token');
-    if(b) b.style.opacity = localStorage.getItem('prometheus_token') ? '1' : '0.45';
+    if(b) b.style.opacity = localStorage.getItem('prometheus_session') ? '1' : '0.45';
   };
-  document.addEventListener('DOMContentLoaded', updateTokenIcon);
+  document.addEventListener('DOMContentLoaded', function(){
+    updateTokenIcon();
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && document.getElementById('login-modal')?.style.display === 'flex') doLogin();
+    });
+  });
 })();
 
 loadProjects();loadStats();searchMemories();
