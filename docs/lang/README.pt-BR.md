@@ -169,10 +169,37 @@ Todas as opções são variáveis de ambiente — ver [.env.example](../../.env.
 
 ## Integrações
 
-Funciona com qualquer agente compatível com MCP:
+Funciona com qualquer agente compatível com MCP — **uma memória compartilhada para todas as suas ferramentas**:
 
-- **OpenCode** (nativo — skill `auto-memory` incluída)
-- **Claude Code**, **Cursor**, **Codex CLI** (via MCP do Mnemosyne)
+```
+OpenCode ─┐
+Claude Code ─┼──► Mnemosyne MCP (:8765) ──► Prometheus Memory (mesmo store)
+Cursor ─────┤        ▲
+Codex CLI ──┘   REST API (:8777) — /api/context/briefing, /api/memory/*
+```
+
+### Setup por ferramenta
+
+| Ferramenta | Setup |
+|---|---|
+| **OpenCode** | Nativo — copie a skill incluída: `cp -r skills/auto-memory ~/.opencode/skills/` |
+| **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
+| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
+| **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` `url = "http://localhost:8765/sse"` |
+| **Qualquer agente** | REST: `GET /api/context/briefing` (início de sessão, ~500 tokens) + CLI/MCP do Mnemosyne p/ escritas |
+
+Uma decisão tomada pelo agente A de manhã fica disponível para o agente B à tarde — ferramentas diferentes, mesma memória.
+
+## Economia de Tokens
+
+O Prometheus foi feito para **reduzir gasto de tokens**, não só guardar memórias:
+
+| Mecanismo | Como economiza |
+|---|---|
+| **Offloading** (`scripts/ref_manager.py`) | Outputs grandes (>500 chars) viram refs `[ref:id]` — até **61% de redução de tokens** no contexto |
+| **Compressão L0→L3** | Fatos crus consolidam em cenas e persona — cada recall injeta ~40 tokens a menos por fato consolidado |
+| **Context Briefing** | `GET /api/context/briefing` retorna resumo comprimido de ~500 tokens (persona + cenas + fatos) — inicie cada sessão com contexto máximo a custo mínimo |
+| **Medidor de economia** | `GET /api/stats/savings` estima o total economizado (bytes offloaded ÷ 4 + compressão) e mostra um card 💰 na sidebar da UI |
 
 ## Comparação
 

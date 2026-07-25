@@ -198,10 +198,37 @@ All options are environment variables — see [.env.example](.env.example):
 
 ## Integrations
 
-Works with any MCP-compatible agent:
+Works with any MCP-compatible agent — **one shared memory for all your dev tools**:
 
-- **OpenCode** (native — `auto-memory` skill included)
-- **Claude Code**, **Cursor**, **Codex CLI** (via Mnemosyne MCP)
+```
+OpenCode ─┐
+Claude Code ─┼──► Mnemosyne MCP (:8765) ──► Prometheus Memory (same store)
+Cursor ─────┤        ▲
+Codex CLI ──┘   REST API (:8777) — /api/context/briefing, /api/memory/*
+```
+
+### Setup per tool
+
+| Tool | Setup |
+|---|---|
+| **OpenCode** | Native — copy the included skill: `cp -r skills/auto-memory ~/.opencode/skills/` |
+| **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
+| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
+| **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` `url = "http://localhost:8765/sse"` |
+| **Any agent** | REST: `GET /api/context/briefing` (session start, ~500 tokens) + Mnemosyne CLI/MCP for writes |
+
+A decision made by agent A in the morning is available to agent B in the afternoon — different tools, same memory.
+
+## Token Savings
+
+Prometheus is built to **reduce token spend**, not just store memories:
+
+| Mechanism | How it saves |
+|---|---|
+| **Offloading** (`scripts/ref_manager.py`) | Large tool outputs (>500 chars) become `[ref:id]` refs — up to **61% token reduction** in context |
+| **L0→L3 compression** | Raw facts consolidate into scenes and persona — recall injects ~40 fewer tokens per consolidated fact |
+| **Context Briefing** | `GET /api/context/briefing` returns a ~500-token compressed summary (persona + scenes + recent facts) — start every session with maximum context at minimum cost |
+| **Savings meter** | `GET /api/stats/savings` estimates total tokens saved (offloaded bytes ÷ 4 + compression) and shows a 💰 card in the UI sidebar |
 
 ## Comparison
 
