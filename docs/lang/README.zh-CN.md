@@ -5,7 +5,7 @@
 > 基于 [Mnemosyne](https://github.com/abdiasrj/mnemosyne)（BEAM 架构）构建，架构灵感来自 TencentDB-Agent-Memory（L0→L3 金字塔）。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](../../LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Mnemosyne 3.12+](https://img.shields.io/badge/mnemosyne-3.12+-blueviolet.svg)](https://github.com/abdiasrj/mnemosyne)
 
 🌐 [English](../../README.md) | [Português](README.pt-BR.md) | **中文**
@@ -84,7 +84,7 @@ L0→L3 流水线会自动整合一切 —— 每 6 小时事实汇集成场景�
 
 ### 前置要求
 
-- Python 3.9+
+- Python 3.10+
 - 带 systemd 的 Linux（用于 24/7 服务——可选）
 - DeepSeek API 密钥（用于 L2/L3 整合）
 - Tesseract OCR（可选，用于扫描版 PDF 和图片）

@@ -5,7 +5,7 @@
 > Baseado em [Mnemosyne](https://github.com/abdiasrj/mnemosyne) (BEAM) + arquitetura inspirada no TencentDB-Agent-Memory (pirâmide L0→L3).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](../../LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Mnemosyne 3.12+](https://img.shields.io/badge/mnemosyne-3.12+-blueviolet.svg)](https://github.com/abdiasrj/mnemosyne)
 
 🌐 [English](../../README.md) | **Português** | [中文](README.zh-CN.md)
@@ -88,7 +88,7 @@ Detalhes completos em [ARCHITECTURE.md](../../ARCHITECTURE.md).
 
 ### Pré-requisitos
 
-- Python 3.9+
+- Python 3.10+
 - Linux com systemd (para serviço 24/7 — opcional)
 - DeepSeek API key (para consolidação L2/L3)
 - Tesseract OCR (opcional, para PDFs escaneados e imagens)

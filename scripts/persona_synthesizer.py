@@ -35,7 +35,8 @@ def get_all_scenes() -> list:
 
 def synthesize_persona(scenes: list) -> str:
     if not DEEPSEEK_KEY:
-        return "[Erro sintese persona: DEEPSEEK_API_KEY nao configurada]"
+        print("  DEEPSEEK_API_KEY nao configurada — persona pulada")
+        return ""
     prompt = f"""Analise as cenas de trabalho abaixo e crie um perfil de persona sintetico em portugues brasileiro.
 
 Cenas recentes (ultimas semanas):
@@ -62,9 +63,12 @@ Gere um perfil Markdown conciso (max 400 tokens):
         )
         return resp.json()["choices"][0]["message"]["content"]
     except Exception as e:
-        return f"[Erro sintese persona: {e}]"
+        return ""
 
 def store_persona(persona: str):
+    if not persona or persona.startswith("[Erro"):
+        print("  Persona NAO persistida (erro na sintese) — evitando contaminar L3")
+        return
     ts = datetime.now().strftime("%d/%m/%Y")
     subprocess.run([
         "mnemosyne", "remember",
@@ -154,9 +158,12 @@ if __name__ == "__main__":
     events = []
     if len(scenes) >= 3:
         persona = synthesize_persona(scenes)
-        store_persona(persona)
-        print(f"  Persona sintetizada: {len(persona)} chars")
-        events.append(f"persona={len(persona)}chars")
+        if persona:
+            store_persona(persona)
+            print(f"  Persona sintetizada: {len(persona)} chars")
+            events.append(f"persona={len(persona)}chars")
+        else:
+            print("  Sintese falhou — L3 nao atualizado")
     else:
         print("  Dados insuficientes para persona (min 3 cenas)")
 

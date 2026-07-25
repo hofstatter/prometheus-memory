@@ -1,4 +1,4 @@
-name: lint
+name: ci
 
 on:
   push:
@@ -17,6 +17,12 @@ jobs:
         run: python3 -m py_compile scripts/*.py web/*.py
       - name: Shell check
         run: bash -n setup.sh
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Tests
+        run: python3 -m pytest tests/ -q
+      - name: Dependency audit
+        run: pip install pip-audit && pip-audit -r requirements.txt --ignore-vuln PYSEC-0000 || true
       - name: Secret scan (padrões comuns)
         run: |
           ! grep -rE "sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|gsk_[a-zA-Z0-9]{20,}|xai-[a-zA-Z0-9]{20,}" \
