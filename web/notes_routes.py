@@ -52,6 +52,31 @@ def detect_source(url):
             return source
     return "web"
 
+def _fetch_safe(url: str, headers: dict, max_redirects: int = 5, max_bytes: int = 10_000_000):
+    """GET com SSRF guard revalidado a cada redirect e limite de download."""
+    current = url
+    for _ in range(max_redirects + 1):
+        if not _is_safe_url(current):
+            raise ValueError("URL bloqueada (redirect para destino nao publico)")
+        resp = http.get(current, headers=headers, timeout=15, allow_redirects=False, stream=True)
+        if resp.is_redirect or resp.is_permanent_redirect:
+            location = resp.headers.get("Location", "")
+            if not location:
+                raise ValueError("redirect sem Location")
+            from urllib.parse import urljoin
+            current = urljoin(current, location)
+            continue
+        chunks, total = [], 0
+        for chunk in resp.iter_content(65536, decode_unicode=False):
+            total += len(chunk)
+            if total > max_bytes:
+                raise ValueError("resposta excede 10MB")
+            chunks.append(chunk)
+        resp.close()
+        return resp, b"".join(chunks).decode(resp.encoding or "utf-8", errors="replace")
+    raise ValueError("redirects demais")
+
+
 def extract_from_url(url):
     if not _is_safe_url(url):
         return {"title": url, "text": "URL bloqueada: apenas http(s) públicos são permitidos.", "source": "error"}
@@ -59,20 +84,22 @@ def extract_from_url(url):
     source = detect_source(url)
 
     try:
-        resp = http.get(url, headers=headers, timeout=15)
-        html = resp.text
+        resp, html = _fetch_safe(url, headers)
     except Exception as e:
-        return {"title": url, "text": f"Erro ao acessar: {e}", "source": "error"}
+        return {"title": url, "text": "Erro ao acessar a URL.", "source": "error"}
 
     if source == "github":
         text_parts = []
         try:
-            api_url = url.replace("github.com", "api.github.com/repos").rstrip("/") + "/readme"
-            r = http.get(api_url, headers=headers, timeout=10)
-            if r.status_code == 200:
-                import base64
-                readme = base64.b64decode(r.json().get("content", "")).decode()
-                text_parts.append(f"# README\n\n{readme}")
+            parsed = urlparse(url)
+            repo_path = parsed.path.strip("/")
+            if parsed.hostname == "github.com" and repo_path.count("/") >= 1:
+                api_url = f"https://api.github.com/repos/{repo_path}/readme"
+                r = http.get(api_url, headers=headers, timeout=10)
+                if r.status_code == 200:
+                    import base64
+                    readme = base64.b64decode(r.json().get("content", "")).decode()
+                    text_parts.append(f"# README\n\n{readme}")
         except Exception:
             pass
         text_parts.append(_extract_html_text(html))

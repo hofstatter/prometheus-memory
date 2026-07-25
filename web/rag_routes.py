@@ -7,7 +7,7 @@ from pathlib import Path
 _path = Path(__file__).resolve().parent
 if str(_path) not in sys.path:
     sys.path.insert(0, str(_path))
-from rag_engine import RAGEngine, MNEMOSYNE_DB, MNEMOSYNE_HOME
+from rag_engine import get_engine, MNEMOSYNE_DB, MNEMOSYNE_HOME
 
 rag_bp = Blueprint('rag', __name__, url_prefix='/api/rag')
 UPLOAD_DIR = MNEMOSYNE_HOME / "uploads"
@@ -16,7 +16,7 @@ ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".png", ".jpg", ".jpeg"}
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 def _engine():
-    return RAGEngine(str(MNEMOSYNE_DB))
+    return get_engine()
 
 @rag_bp.post("/collections")
 def create_collection():
@@ -58,7 +58,7 @@ def upload_document():
             return jsonify(result)
         return jsonify({"error": "indexing failed"}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "falha ao processar documento"}), 500
     finally:
         if filepath.exists():
             filepath.unlink()

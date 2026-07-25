@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Prometheus RAG Engine — sqlite-vec + fastembed + langchain chunker + OCR."""
-import os, uuid, fitz
+import os, re, uuid
 from pathlib import Path
 from datetime import datetime
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from fastembed import TextEmbedding
+
+PDF_MAX_PAGES = 200
 
 MNEMOSYNE_HOME = Path(os.environ.get("MNEMOSYNE_HOME", Path.home() / ".hermes" / "mnemosyne"))
 MNEMOSYNE_DB = Path(os.environ.get("PROMETHEUS_DB", MNEMOSYNE_HOME / "data" / "mnemosyne.db"))
@@ -31,8 +33,10 @@ class RAGEngine:
 
     def _db(self):
         import sqlite3, sqlite_vec
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=10)
         conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=5000")
+        conn.execute("PRAGMA synchronous=NORMAL")
         conn.enable_load_extension(True)
         sqlite_vec.load(conn)
         conn.enable_load_extension(False)
@@ -57,12 +61,13 @@ class RAGEngine:
                 embedding BLOB
             );
             CREATE INDEX IF NOT EXISTS idx_rag_docs_collection ON rag_documents(collection_id);
+            CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc ON rag_chunks(document_id);
         """)
         db.commit()
         db.close()
 
     def create_collection(self, name, description=""):
-        cid = name.lower().replace(" ", "-")[:40]
+        cid = re.sub(r"[^a-z0-9-]", "-", name.lower())[:40]
         db = self._db()
         db.execute("INSERT OR IGNORE INTO rag_collections(id,name,description) VALUES(?,?,?)",
                    (cid, name, description))
@@ -99,7 +104,15 @@ class RAGEngine:
     def extract_file(self, filepath):
         ext = Path(filepath).suffix.lower()
         if ext == ".pdf":
-            text = "\n".join(page.get_text() for page in fitz.open(filepath))
+            import pypdfium2 as pdfium
+            texts = []
+            pdf = pdfium.PdfDocument(filepath)
+            try:
+                for i in range(min(len(pdf), PDF_MAX_PAGES)):
+                    texts.append(pdf.get_page(i).get_textpage().get_text_range())
+            finally:
+                pdf.close()
+            text = "\n".join(texts)
             if len(text.strip()) < 100:
                 text = self._ocr_pdf(filepath)
             return text
@@ -115,22 +128,21 @@ class RAGEngine:
             return Path(filepath).read_text(errors="ignore")
 
     def _ocr_pdf(self, filepath):
-        """OCR em PDF escaneado: renderiza páginas via PyMuPDF e roda tesseract por página."""
+        """OCR em PDF escaneado: renderiza páginas via pypdfium2 e roda tesseract por página."""
         import subprocess, tempfile
+        import pypdfium2 as pdfium
         texts = []
         try:
-            doc = fitz.open(filepath)
+            pdf = pdfium.PdfDocument(filepath)
             with tempfile.TemporaryDirectory() as tmp:
-                for i, page in enumerate(doc):
-                    if i >= 30:
-                        break
-                    pix = page.get_pixmap(dpi=200)
+                for i in range(min(len(pdf), 30)):
+                    bitmap = pdf.get_page(i).render(scale=200 / 72)
                     img_path = Path(tmp) / f"page_{i}.png"
-                    pix.save(str(img_path))
+                    bitmap.to_pil().save(str(img_path))
                     r = subprocess.run(["tesseract", str(img_path), "stdout", "-l", "por+eng"],
                                        capture_output=True, text=True, timeout=60)
                     texts.append(r.stdout.strip())
-            doc.close()
+            pdf.close()
         except Exception:
             return ""
         return "\n".join(t for t in texts if t)

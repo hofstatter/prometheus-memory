@@ -9,4 +9,3 @@ venv/
 *.db-shm
 .DS_Store
 node_modules/
-docs/SCREENSHOTS/*.png

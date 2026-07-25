@@ -25,9 +25,31 @@ DEFAULT_PROJECT = os.environ.get("PROMETHEUS_PROJECT", "geral")
 app = Flask(__name__, template_folder=str(SRC_DIR / "templates"), static_folder=str(SRC_DIR / "static"))
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
+from auth_guard import require_token_if_exposed
+
+
+@app.after_request
+def security_headers(resp):
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    resp.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    return resp
+
+
+@app.before_request
+def _auth_gate():
+    if request.path == "/health":
+        return None
+    return require_token_if_exposed(lambda: None)()
+
+
 def run_mnemosyne(*args, timeout=15):
-    r = subprocess.run(["mnemosyne"] + list(args), capture_output=True, text=True, timeout=timeout)
-    return r.stdout
+    try:
+        r = subprocess.run(["mnemosyne"] + list(args), capture_output=True, text=True, timeout=timeout)
+        return r.stdout
+    except subprocess.TimeoutExpired:
+        return ""
 
 def parse_mnemosyne_output(raw: str) -> list:
     items, cur = [], {}
@@ -71,7 +93,28 @@ def index():
 
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok", "service": "prometheus-memory", "port": PROMETHEUS_PORT})
+    checks = {}
+    try:
+        import sqlite3
+        db = sqlite3.connect(str(MNEMOSYNE_DB), timeout=3)
+        db.execute("SELECT 1")
+        db.close()
+        checks["db"] = True
+    except Exception:
+        checks["db"] = False
+    try:
+        from rag_engine import get_engine
+        get_engine()
+        checks["embeddings"] = True
+    except Exception:
+        checks["embeddings"] = False
+    try:
+        subprocess.run(["mnemosyne", "stats"], capture_output=True, timeout=3)
+        checks["cli"] = True
+    except Exception:
+        checks["cli"] = False
+    ok = all(checks.values())
+    return jsonify({"status": "ok" if ok else "degraded", "checks": checks, "service": "prometheus-memory"}), 200 if ok else 503
 
 # ─── API: Timeline ─────────────────────────────────
 
@@ -227,8 +270,9 @@ def projects():
 @app.route("/api/memory/<mem_id>")
 def memory_detail(mem_id):
     import sqlite3
-    db = sqlite3.connect(str(MNEMOSYNE_DB))
+    db = sqlite3.connect(str(MNEMOSYNE_DB), timeout=10)
     try:
+        db.execute("PRAGMA busy_timeout=5000")
         row = db.execute(
             "SELECT id, content, importance FROM memories WHERE id = ?", (mem_id,)
         ).fetchone()

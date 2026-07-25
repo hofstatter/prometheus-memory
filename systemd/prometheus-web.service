@@ -7,9 +7,13 @@ Type=simple
 WorkingDirectory=%h/prometheus-memory/web
 Environment="PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin"
 EnvironmentFile=-%h/prometheus-memory/.env
-ExecStart=/usr/bin/python3 %h/prometheus-memory/web/app.py
+ExecStart=%h/.local/bin/gunicorn --workers 2 --threads 8 --bind ${PROMETHEUS_HOST}:${PROMETHEUS_PORT} app:app
 Restart=on-failure
 RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=%h/.hermes %h/notes %h/.local/log
+PrivateTmp=true
 
 [Install]
 WantedBy=default.target

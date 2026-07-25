@@ -48,7 +48,7 @@ via CDN, Alpine.js, HTMX, G6.js (grafo), Mermaid.js (canvas).
 | `rag_routes.py` | Blueprint `/api/rag`: upload, busca, coleções, documentos |
 | `notes_routes.py` | Blueprint `/api/notes`: import por URL, sanitização, CRUD, busca |
 | `editor_routes.py` | Blueprint `/api/memory`: update/delete de memórias |
-| `templates/index.html` | SPA com 6 abas |
+| `templates/index.html` | SPA com 5 abas + editor modal |
 
 **Comunicação com o Mnemosyne:** a UI lê o banco SQLite diretamente
 (detalhes de memória) e usa o CLI `mnemosyne` via subprocess para

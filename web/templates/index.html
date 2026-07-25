@@ -473,10 +473,10 @@ function loadRAGCollections(){
     const sel=document.getElementById('rag-collection');
     sel.innerHTML='<option value="">Todas as coleções</option>';
     if(Array.isArray(data)){
-      data.forEach(c=>sel.innerHTML+='<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>');
+      data.forEach(c=>sel.innerHTML+='<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</option>');
       // Sidebar collections
       document.getElementById('rag-sidebar-collections').innerHTML=data.map((c,i)=>
-        '<div class="sidebar-item'+(ragCurrentFilter===c.id?' active':'')+'" onclick="filterRAGByCollection(\''+c.id+'\')"><span class="sidebar-dot" style="background:'+RAG_PALETTE[i%5]+';box-shadow:0 0 6px '+RAG_PALETTE[i%5]+'55"></span>'+escapeHtml(c.name)+'</div>'
+        '<div class="sidebar-item'+(ragCurrentFilter===c.id?' active':'')+'" onclick="filterRAGByCollection(\''+escapeHtml(c.id)+'\')"><span class="sidebar-dot" style="background:'+RAG_PALETTE[i%5]+';box-shadow:0 0 6px '+RAG_PALETTE[i%5]+'55"></span>'+escapeHtml(c.name)+'</div>'
       ).join('')||'<div style="color:var(--ink-muted);font-size:12px">nenhuma</div>'
     }
   }).catch(()=>{})
@@ -675,7 +675,7 @@ function md2html(text){
     const b=blocks[parseInt(i)];
     const icon=b.lang==='json'?'{ }':b.lang==='css'?'🎨':b.lang==='bash'?'$':b.lang==='python'?'🐍':b.lang==='sql'?'🗄️':b.lang==='js'?'JS':b.lang==='html'?'🌐':'</>';
     const langHtml=b.lang?`<span style="font-size:10px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em">${icon} ${b.lang}</span>`:'<span style="font-size:10px;color:var(--ink-subtle)">📋 code</span>';
-    return`<div style="background:#0d1117;border:1px solid var(--hairline);border-radius:var(--radius-md);margin:16px 0;overflow:hidden"><div style="background:var(--surface-2);padding:6px 14px;border-bottom:1px solid var(--hairline);display:flex;justify-content:space-between;align-items:center">${langHtml}<button onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('code').innerText)" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:11px">📋 copiar</button></div><pre style="margin:0;padding:14px;overflow-x:auto"><code style="font-family:var(--font-mono);font-size:12px;color:#c9d1d9;line-height:1.6">${b.code}</code></pre></div>`
+    return`<div style="background:#0d1117;border:1px solid var(--hairline);border-radius:var(--radius-md);margin:16px 0;overflow:hidden"><div style="background:var(--surface-2);padding:6px 14px;border-bottom:1px solid var(--hairline);display:flex;justify-content:space-between;align-items:center">${langHtml}<button onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('code').innerText)" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:11px">📋 copiar</button></div><pre style="margin:0;padding:14px;overflow-x:auto"><code style="font-family:var(--font-mono);font-size:12px;color:#c9d1d9;line-height:1.6">${escapeHtml(b.code)}</code></pre></div>`
   });
   text=text.replace(/^#### (.+)$/gm,'<h4 style="font-size:14px;font-weight:600;color:var(--ink);margin:18px 0 6px">$1</h4>');
   text=text.replace(/^### (.+)$/gm,'<h3 style="font-size:17px;font-weight:600;color:var(--ink);margin:24px 0 8px">$1</h3>');
@@ -818,6 +818,8 @@ function renderGraph(){
   });
 
   graphInstance.render();
+  setTimeout(()=>{try{graphInstance.fitView()}catch(e){}}, 1500);
+  setTimeout(()=>{try{graphInstance.fitView()}catch(e){}}, 4000);
 }
 function togglePhysics(){
   graphRunning=!graphRunning;
@@ -832,6 +834,13 @@ function togglePhysics(){
     }
   }catch(e){}
 }
+
+// Deep-link de abas via hash (#graph, #canvas, #rag, #notes)
+(function(){
+  const h = location.hash.replace('#','');
+  const map = {graph: showGraph, canvas: showCanvas, rag: showRAG, notes: showNotes, timeline: showList};
+  if (map[h]) setTimeout(map[h], 300);
+})();
 </script>
 </body>
 </html>

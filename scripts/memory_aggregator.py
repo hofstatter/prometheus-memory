@@ -17,6 +17,22 @@ DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 LOG_DIR = Path.home() / ".local" / "log"
 CANVAS_DIR = Path.home() / ".hermes" / "mnemosyne"
 CANVAS_FILE = CANVAS_DIR / "canvas.mmd"
+STATE_FILE = CANVAS_DIR / "pipeline_state.json"
+
+
+def load_state() -> dict:
+    if STATE_FILE.exists():
+        try:
+            return json.loads(STATE_FILE.read_text())
+        except Exception:
+            pass
+    return {"processed_ids": []}
+
+
+def save_state(state: dict):
+    CANVAS_DIR.mkdir(parents=True, exist_ok=True)
+    state["processed_ids"] = state.get("processed_ids", [])[-500:]
+    STATE_FILE.write_text(json.dumps(state))
 
 def run_mnemosyne(*args, timeout=30):
     result = subprocess.run(
@@ -126,7 +142,7 @@ def generate_mermaid_canvas():
         state = f"S{count}"
         mmd += f"    {prev_state} --> {state}: {action}\n"
         if len(content) > 40:
-            short = content[:80]
+            short = content[:80].replace(":", " -")
             mmd += f"    note right of {state}: {short}\n"
         prev_state = state
         count += 1
@@ -163,13 +179,30 @@ if __name__ == "__main__":
             f.write(msg + "\n")
         exit(0)
 
-    groups = group_by_project(memories)
+    state = load_state()
+    seen = set(state.get("processed_ids", []))
+    fresh = [m for m in memories if m.get("id") not in seen]
+    print(f"  {len(memories)} recentes, {len(fresh)} novas (watermark)")
+    if not fresh:
+        canvas = generate_mermaid_canvas()
+        msg = f"[{ts}] 0 cenas novas (tudo ja processado), canvas atualizado."
+        print(msg)
+        with open(log_path, "a") as f:
+            f.write(msg + "\n")
+        exit(0)
+
+    groups = group_by_project(fresh)
     total_scenes = 0
     for project, mems in groups.items():
         scene = create_scene(project, mems)
         if scene:
             total_scenes += 1
             print(f"  [{project}] {len(mems)} fatos -> cena criada")
+
+    state["processed_ids"] = seen | {m["id"] for m in fresh if m.get("id")}
+    state["processed_ids"] = list(state["processed_ids"])
+    state["last_run"] = ts
+    save_state(state)
 
     canvas = generate_mermaid_canvas()
     print(f"  Canvas Mermaid gerado ({len(canvas)} chars)")

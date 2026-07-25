@@ -5,7 +5,7 @@
 > Built on [Mnemosyne](https://github.com/abdiasrj/mnemosyne) (BEAM) + architecture inspired by TencentDB-Agent-Memory (L0→L3 pyramid).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Mnemosyne 3.12+](https://img.shields.io/badge/mnemosyne-3.12+-blueviolet.svg)](https://github.com/abdiasrj/mnemosyne)
 
 🌐 **English** | [Português](docs/lang/README.pt-BR.md) | [中文](docs/lang/README.zh-CN.md)
@@ -46,9 +46,10 @@ literally **gets smarter with every cycle**, with zero human intervention.
 - 🔍 **Hierarchical Timeline** — L3→L2→L1 drill-down, sidebar with projects/dates/stats
 - 🕸️ **Knowledge Graph** — G6.js d3-force, Obsidian-style: glow, hover-activate, click → details
 - 📐 **Mermaid Canvas** — auto-generated agent state diagram, zoom, click → offloaded content
-- 📄 **Multimodal local RAG** — upload PDF, TXT, MD, DOCX, PNG, JPG with automatic OCR (Tesseract), vector search
+- 📄 **Multimodal local RAG** — upload PDF, TXT, MD, DOCX, PNG, JPG with automatic OCR (Tesseract), vector search (cosine over fastembed 384d; sqlite-vec KNN planned for v0.2)
 - 📝 **Notes** — URL import (GitHub, X/Twitter, websites) with sanitization and custom Markdown renderer
-- ✏️ **Inline Editor** — edit and delete memories directly in the UI
+- ✏️ **Inline Editor** — edit and delete memories directly in the UI (5 tabs + editor modal)
+- 🗄️ **Storage layer** — SQLite by default (WAL), PostgreSQL-ready interface (`DATABASE_URL`) landing in v0.2
 - 💾 **Log offloading** — large tool outputs become refs (up to 61% token reduction)
 - 🧠 **Skill generation** — detects recurring patterns in scenes and generates reusable skills
 - 🎨 Dark mode, responsive, zero build step (no node_modules)
@@ -87,7 +88,7 @@ Full details in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - Linux with systemd (for 24/7 service — optional)
 - DeepSeek API key (for L2/L3 consolidation)
 - Tesseract OCR (optional, for scanned PDFs and images)
@@ -150,11 +151,43 @@ All options are environment variables — see [.env.example](.env.example):
 | **Skills** | `scripts/skill_generator.py` | Weekly (with L3) | Skills in `~/.opencode/skills/generated/` |
 | **Offloading** | `scripts/ref_manager.py` | On demand | `refs/*.md` with node_id |
 
+## Screenshots
+
+| Timeline | Canvas | RAG | Notes |
+|---|---|---|---|
+| ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) |
+
+## API (REST)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Real health check (DB + embeddings + CLI) |
+| `/api/timeline` | GET | Recent memories with project extraction |
+| `/api/graph` | GET | Nodes/edges for the knowledge graph |
+| `/api/canvas` | GET | Mermaid state diagram |
+| `/api/search?q=` | GET | Memory recall |
+| `/api/stats` | GET | Totals (memories, scenes, RAG docs, notes) |
+| `/api/projects` | GET | Detected projects |
+| `/api/memory/<id>` | GET/PUT/DELETE | Memory detail / update / delete |
+| `/api/rag/collections` | GET/POST | RAG collections |
+| `/api/rag/upload` | POST | Upload + index document (50MB max) |
+| `/api/rag/search` | POST | Vector search |
+| `/api/rag/documents` | GET/DELETE | List / delete documents |
+| `/api/notes` | GET | List notes |
+| `/api/notes/import` | POST | Import note from URL (SSRF-guarded) |
+| `/api/notes/<path>` | GET/PUT/DELETE | Note CRUD |
+| `/api/notes/search` | POST | Full-text note search |
+
+> **Note:** memory *writes* from agents happen via the Mnemosyne CLI/MCP (shared store). A dedicated `POST /api/memory` REST endpoint is planned for v0.2.
+
 ## Security
 
 - Defaults to `127.0.0.1` bind (no network exposure)
+- **Token auth required** when `PROMETHEUS_HOST != 127.0.0.1` (`Authorization: Bearer $PROMETHEUS_TOKEN`) — without it the service refuses to serve
+- **Single-user, single shared store**: no per-agent isolation (trust boundary = local machine). Multi-tenant scoping lands in v0.2
 - Path traversal protection on Notes endpoints
-- SSRF protection on URL import (public http/https only)
+- SSRF protection on URL import, revalidated on every redirect
+- XSS hardening: sanitized collection IDs, escaped code blocks, strict CSP headers
 - No keys in source code — environment variables only
 - HTML/JS sanitization on rendering (XSS)
 
