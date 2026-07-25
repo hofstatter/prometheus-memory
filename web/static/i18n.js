@@ -6,6 +6,21 @@
     // nav + busca
     'Buscar memórias...': {en:'Search memories...', es:'Buscar memorias...', zh:'搜索记忆...'},
     'Todos': {en:'All', es:'Todos', zh:'全部'},
+    '📐 Canvas': {en:'📐 Canvas', es:'📐 Lienzo', zh:'📐 画布'},
+    '📄 RAG': {en:'📄 RAG', es:'📄 RAG', zh:'📄 RAG'},
+    // projetos comuns (dados — traduzidos so no sidebar/grafo, nunca no conteudo)
+    'default': {en:'default', es:'predeterminado', zh:'默认'},
+    'geral': {en:'general', es:'general', zh:'通用'},
+    // canvas (acoes geradas pelo aggregator)
+    'buscar': {en:'search', es:'buscar', zh:'搜索'},
+    'extrair': {en:'extract', es:'extraer', zh:'提取'},
+    'varrer': {en:'scan', es:'escanear', zh:'扫描'},
+    'processar': {en:'process', es:'procesar', zh:'处理'},
+    'Concluido': {en:'Done', es:'Completado', zh:'已完成'},
+    'Nenhuma atividade recente': {en:'No recent activity', es:'Sin actividad reciente', zh:'暂无近期活动'},
+    'Conteúdo offloaded não encontrado': {en:'Offloaded content not found', es:'Contenido offloaded no encontrado', zh:'未找到卸载内容'},
+    'Start': {en:'Start', es:'Inicio', zh:'开始'},
+    'Idle': {en:'Idle', es:'Inactivo', zh:'空闲'},
     '📋 Timeline': {en:'📋 Timeline', es:'📋 Timeline', zh:'📋 时间线'},
     '🕸️ Grafo': {en:'🕸️ Graph', es:'🕸️ Grafo', zh:'🕸️ 图谱'},
     '📐 Canvas — Fluxo do Agente': {en:'📐 Canvas — Agent Flow', es:'📐 Canvas — Flujo del Agente', zh:'📐 画布 — 智能体流程'},
@@ -28,7 +43,7 @@
     'Chunks:': {en:'Chunks:', es:'Chunks:', zh:'块：'},
     'Notas:': {en:'Notes:', es:'Notas:', zh:'笔记：'},
     'Temas:': {en:'Topics:', es:'Temas:', zh:'主题：'},
-    // contadores / unidades
+    // unidades: so em contadores/estatisticas, nunca no conteudo das memorias
     'memórias': {en:'memories', es:'memorias', zh:'条记忆'},
     'notas': {en:'notes', es:'notas', zh:'条笔记'},
     'docs': {en:'docs', es:'docs', zh:'个文档'},
@@ -77,9 +92,45 @@
     {re: /(\d+) memória\b/g, en:'$1 memory', es:'$1 memoria', zh:'$1 条记忆'},
   ];
 
+  // chaves sensiveis: so dentro do Canvas/Mermaid (evita traduzir CONTEUDO das memorias)
+  const CANVAS_ONLY = ['buscar','extrair','varrer','processar','Concluido','Nenhuma atividade recente','Start','Idle','Conteúdo offloaded não encontrado'];
+  // nomes de projeto: so no sidebar/grafo/badge, nunca no texto das memorias
+  const PROJECT_NAMES = ['default','geral'];
+  // unidades: so em contadores, nunca no conteudo
+  const UNIT_WORDS = ['memórias','notas','docs'];
+
   const LANGS = ['en','pt','es','zh'];
-  const KEYS = Object.keys(T).sort((a,b)=>b.length-a.length);
+  const KEYS = Object.keys(T).filter(k=>!CANVAS_ONLY.includes(k) && !PROJECT_NAMES.includes(k) && !UNIT_WORDS.includes(k)).sort((a,b)=>b.length-a.length);
+  const CKEYS = CANVAS_ONLY.filter(k=>T[k]).sort((a,b)=>b.length-a.length);
   const ORIG = new WeakMap();
+
+  function inCanvas(node){
+    let p = node.parentElement;
+    while(p){
+      if(p.id === 'canvas-view' || p.id === 'canvas-mermaid' || p.tagName === 'svg' || (p.classList && p.classList.contains('mermaid'))) return true;
+      p = p.parentElement;
+    }
+    return false;
+  }
+
+  function inProjectCtx(node){
+    let p = node.parentElement;
+    while(p){
+      if(p.id === 'project-list' || p.id === 'g6-canvas' || (p.classList && p.classList.contains('project-badge'))) return true;
+      p = p.parentElement;
+    }
+    return false;
+  }
+
+  function inCounterCtx(node){
+    let p = node.parentElement;
+    while(p){
+      if(p.id && ['memory-count','sidebar-stats','notes-stats','rag-sidebar-stats','sidebar-savings','date-list'].includes(p.id)) return true;
+      if(p.classList && (p.classList.contains('timeline-date') || p.classList.contains('count'))) return true;
+      p = p.parentElement;
+    }
+    return false;
+  }
 
   function detect(){
     const url = new URLSearchParams(location.search).get('lang');
@@ -99,11 +150,28 @@
     return hit && hit[lang] ? hit[lang] : str;
   }
 
-  function translateText(orig, lang){
+  function translateText(orig, lang, canvasCtx, projCtx, counterCtx){
     if(lang === 'pt') return orig;
+    inProjectCtx._hit = projCtx;
     let out = orig;
     for(const key of KEYS){
       if(out.includes(key)) out = out.split(key).join(tr(key, lang));
+    }
+    if(counterCtx){
+      for(const key of UNIT_WORDS){
+        out = out.replace(new RegExp('\\b'+key+'\\b', 'g'), tr(key, lang));
+      }
+    }
+    if(canvasCtx){
+      for(const key of CKEYS){
+        if(out.includes(key)) out = out.split(key).join(tr(key, lang));
+      }
+    }
+    if(inProjectCtx._hit){
+      for(const key of PROJECT_NAMES){
+        const re = new RegExp('\\b'+key+'\\b', 'g');
+        out = out.replace(re, tr(key, lang));
+      }
     }
     for(const p of PATTERNS){
       out = out.replace(p.re, (m, g1)=> (p[lang]||m).replace('$1', g1));
@@ -116,7 +184,7 @@
       if(!ORIG.has(node)) ORIG.set(node, node.nodeValue);
       const orig = ORIG.get(node);
       if(!orig.trim()) return;
-      const next = translateText(orig, lang);
+      const next = translateText(orig, lang, inCanvas(node), inProjectCtx(node), inCounterCtx(node));
       if(next !== node.nodeValue) node.nodeValue = next;
       return;
     }
@@ -126,7 +194,7 @@
       if(!el.getAttribute) return;
       const dk = 'orig_'+attr;
       if(!el.dataset[dk] && el.getAttribute(attr)) el.dataset[dk] = el.getAttribute(attr);
-      if(el.dataset[dk]) el.setAttribute(attr, translateText(el.dataset[dk], lang));
+      if(el.dataset[dk]) el.setAttribute(attr, translateText(el.dataset[dk], lang, inCanvas(el), inProjectCtx(el), inCounterCtx(el)));
     });
     for(const child of el.childNodes) walk(child, lang);
   }
