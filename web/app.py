@@ -129,10 +129,20 @@ def timeline():
 
 # ─── API: Graph ────────────────────────────────────
 
+def _clean_text(t: str) -> str:
+    import re
+    t = re.sub(r"<think>.*?</think>", "", t, flags=re.DOTALL)
+    t = re.sub(r"<think>.*$", "", t, flags=re.DOTALL)
+    t = re.sub(r"</?think>", "", t)
+    return t.strip()
+
+
 @app.route("/api/graph")
 def graph():
     raw = run_mnemosyne("recall", "cena fato", "50")
     memories = parse_mnemosyne_output(raw)
+    for m in memories:
+        m["content"] = _clean_text(m.get("content", ""))
     if not memories:
         stats_raw = run_mnemosyne("stats")
         total = str(len(memories))
