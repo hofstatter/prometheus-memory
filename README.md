@@ -136,6 +136,9 @@ All options are environment variables — see [.env.example](.env.example):
 | `PROMETHEUS_NOTES_DIR` | `~/notes` | Notes directory |
 | `PROMETHEUS_USER` | `$USER` | Name used in persona memories |
 | `PROMETHEUS_PROJECT` | `geral` | Default project for memories |
+| `PROMETHEUS_PASSWORD` | — | **UI login password** (required when bind ≠ localhost) |
+| `PROMETHEUS_TOKEN` | — | API Bearer token for agents/scripts |
+| `PROMETHEUS_PROTECT_READS` | `false` | `true` = entire UI requires login |
 | `PROMETHEUS_PROJECTS` | — | Known projects (comma-separated) |
 | `PROMETHEUS_EXCLUDE` | — | Content to hide from the UI (comma-separated) |
 | `FIRECRAWL_API_KEY` | — | Scraping fallback (optional) |
@@ -183,7 +186,9 @@ All options are environment variables — see [.env.example](.env.example):
 ## Security
 
 - Defaults to `127.0.0.1` bind (no network exposure)
-- **Token auth required** when `PROMETHEUS_HOST != 127.0.0.1` (`Authorization: Bearer $PROMETHEUS_TOKEN`) — without it the service refuses to serve
+- **Login system**: when `PROMETHEUS_HOST != 127.0.0.1`, the UI asks for `PROMETHEUS_PASSWORD` once per browser (glass modal) and issues a 30-day HMAC session. Login endpoint is rate-limited (5 attempts/min/IP — even the correct password waits in the window)
+- **API token**: agents/scripts use `Authorization: Bearer $PROMETHEUS_TOKEN` instead of the password login
+- **Scopes**: default protects writes only (reads open); `PROMETHEUS_PROTECT_READS=true` protects the entire API (HTML shell stays public so the login modal can render)
 - **Single-user, single shared store**: no per-agent isolation (trust boundary = local machine). Multi-tenant scoping lands in v0.2
 - Path traversal protection on Notes endpoints
 - SSRF protection on URL import, revalidated on every redirect

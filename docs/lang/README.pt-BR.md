@@ -136,6 +136,9 @@ Todas as opções são variáveis de ambiente — ver [.env.example](../../.env.
 | `PROMETHEUS_NOTES_DIR` | `~/notes` | Diretório das notas |
 | `PROMETHEUS_USER` | `$USER` | Nome usado nas memórias de persona |
 | `PROMETHEUS_PROJECT` | `geral` | Projeto padrão das memórias |
+| `PROMETHEUS_PASSWORD` | — | **Senha do login da UI** (obrigatória quando bind ≠ localhost) |
+| `PROMETHEUS_TOKEN` | — | Token Bearer da API p/ agentes/scripts |
+| `PROMETHEUS_PROTECT_READS` | `false` | `true` = UI inteira exige login |
 | `PROMETHEUS_PROJECTS` | — | Projetos conhecidos (vírgula) |
 | `PROMETHEUS_EXCLUDE` | — | Conteúdos a excluir da UI (vírgula) |
 | `FIRECRAWL_API_KEY` | — | Fallback de scraping (opcional) |
@@ -154,8 +157,13 @@ Todas as opções são variáveis de ambiente — ver [.env.example](../../.env.
 ## Segurança
 
 - Bind padrão em `127.0.0.1` (sem exposição de rede)
+- **Login**: quando `PROMETHEUS_HOST != 127.0.0.1`, a UI pede a `PROMETHEUS_PASSWORD` uma vez por navegador (modal) e emite sessão HMAC de 30 dias. Endpoint de login com rate limit (5 tentativas/min/IP — até a senha correta aguarda na janela)
+- **Token da API**: agentes/scripts usam `Authorization: Bearer $PROMETHEUS_TOKEN` em vez do login
+- **Escopos**: padrão protege só escritas (leituras abertas); `PROMETHEUS_PROTECT_READS=true` protege a API inteira (o HTML da página fica público para o modal renderizar)
+- **Single-user, store compartilhado**: sem isolamento por agente (trust boundary = máquina local). Multi-tenant na v0.2
 - Proteção contra path traversal nos endpoints de Notes
-- Proteção SSRF na importação de URLs (só http/https públicos)
+- Proteção SSRF na importação de URLs, revalidada a cada redirect
+- XSS: IDs de coleção sanitizados, code blocks escapados, headers CSP estritos
 - Nenhuma chave no código — tudo via variáveis de ambiente
 - Sanitização de HTML/JS na renderização (XSS)
 
