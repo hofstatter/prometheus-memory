@@ -1,0 +1,64 @@
+> 🌐 [English](../../README.md) · [Português](README.pt-BR.md) · **Español** · [中文](README.zh-CN.md)
+
+> _Documentación completa en inglés en el README principal. Esta es la guía rápida en español._
+
+# ⚡ Prometheus Memory
+
+Pipeline de **memoria jerárquica L0→L3** para agentes de IA — el segundo cerebro compartido de tus agentes.
+
+## ¿Qué hace?
+
+- **Timeline jerárquica** L3→L2→L1 con proyectos, fechas y stats
+- **Grafo de conocimiento** animado estilo Obsidian (física continua)
+- **Canvas Mermaid** auto-generado del flujo del agente
+- **RAG multimodal** — PDF, TXT, MD, DOCX, imágenes con OCR
+- **Notes** — importa contenido de URLs (GitHub, X, sitios web) con sanitización
+- **Offloading de logs** — hasta 61% menos tokens en contexto
+- **Context Briefing** — `GET /api/context/briefing` (~500 tokens para iniciar sesión)
+- **Login por contraseña** — sesión de 30 días, rate limit anti-fuerza-bruta
+
+## Instalación (1 comando)
+
+```bash
+git clone https://github.com/hofstatter/prometheus-memory.git
+cd prometheus-memory
+python setup.py          # Windows / macOS / Linux / Raspberry Pi
+# o: bash setup.sh       (Unix)
+```
+
+El instalador detecta tu SO y arquitectura, pregunta el **idioma** (en/pt/es/zh), instala dependencias y registra el servicio según la plataforma (systemd en Linux, launchd en macOS, Task Scheduler en Windows).
+
+## Plataformas soportadas
+
+| Plataforma | Estado |
+|---|---|
+| Linux x86_64 | ✅ |
+| Linux ARM64 / Raspberry Pi 5 | ✅ |
+| macOS (Intel + Apple Silicon) | ✅ |
+| Windows 10/11 (x64) | ✅ |
+
+## Integraciones
+
+| Herramienta | Configuración |
+|---|---|
+| **OpenCode** | Nativa — `cp -r skills/auto-memory ~/.opencode/skills/` |
+| **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
+| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
+| **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` |
+
+## Ahorro de tokens
+
+| Mecanismo | Cómo ahorra |
+|---|---|
+| **Offloading** | Outputs grandes → refs `[ref:id]` (hasta 61% menos) |
+| **Compresión L0→L3** | Hechos → escenas → persona |
+| **Context Briefing** | Resumen de ~500 tokens por sesión |
+| **Medidor** | `GET /api/stats/savings` + tarjeta 💰 en la UI |
+
+## Seguridad
+
+- Bind por defecto `127.0.0.1`; cuando se expone, **login con contraseña** (`PROMETHEUS_PASSWORD`) con sesión de 30 días y rate limit (5/min)
+- Protección SSRF revalidada en cada redirect; anti path-traversal; CSP estricta
+- Single-user, store compartido (multi-tenant en v0.2)
+
+📖 **Documentación completa:** [README en inglés](../../README.md)

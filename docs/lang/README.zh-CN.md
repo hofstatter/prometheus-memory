@@ -1,5 +1,7 @@
 # ⚡ Prometheus Memory
 
+> 🌐 [English](../../README.md) · [Português](README.pt-BR.md) · [Español](README.es.md) · **中文**
+
 > 面向 AI 智能体的 L0→L3 记忆流水线。
 > 将原始对话转化为用户画像、技能与图表。
 > 基于 [Mnemosyne](https://github.com/abdiasrj/mnemosyne)（BEAM 架构）构建，架构灵感来自 TencentDB-Agent-Memory（L0→L3 金字塔）。
