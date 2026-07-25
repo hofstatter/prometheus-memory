@@ -52,6 +52,10 @@ def test_login_rate_limit(monkeypatch):
         assert r.status_code == 401
     r = client.post("/api/auth/login", json={"password": "errada"})
     assert r.status_code == 429
+    # durante a janela de rate limit, ate a senha certa aguarda (anti-brute-force)
+    r = client.post("/api/auth/login", json={"password": "test-password-123"})
+    assert r.status_code == 429
+    ag._logins.clear()
     r = client.post("/api/auth/login", json={"password": "test-password-123"})
     assert r.status_code == 200
     assert "token" in r.get_json()
