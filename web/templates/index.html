@@ -132,6 +132,7 @@
       <div id="date-list" style="margin-bottom:20px"><div style="color:var(--ink-muted);font-size:12px">carregando...</div></div>
       <div style="font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">📊 Stats</div>
       <div id="sidebar-stats" style="color:var(--ink-muted);font-size:12px;line-height:1.8">carregando...</div>
+      <div id="sidebar-savings" style="color:var(--ink-muted);font-size:12px;line-height:1.8;margin-top:8px"></div>
       <div style="margin-top:12px;border-top:1px solid var(--hairline);padding-top:12px">
         <div id="filter-active" style="font-size:11px;color:var(--accent);display:none">
           🔍 Filtro: <span id="filter-label"></span>
@@ -349,6 +350,12 @@ function loadStats(){
   fetch('/api/stats').then(r=>r.json()).then(d=>{
     document.getElementById('memory-count').textContent=d.total_memories+' memórias · '+d.notes_count+' notas · '+d.rag_docs+' docs'
   })
+  fetch('/api/stats/savings').then(r=>r.json()).then(d=>{
+    if(d.total_tokens_saved!==undefined){
+      const el=document.getElementById('sidebar-savings');
+      if(el)el.innerHTML='💰 Tokens economizados: <b>'+d.total_tokens_saved.toLocaleString()+'</b><br><span style="font-size:10px;color:var(--ink-subtle)">offloading + compressão L0→L3</span>'
+    }
+  }).catch(()=>{})
 }
 function searchMemories(){
   const q=document.getElementById('search-input').value.trim()||'implementacao decisao config correcao plano cena';

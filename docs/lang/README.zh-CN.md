@@ -165,10 +165,37 @@ python3 web/app.py     # http://localhost:8777
 
 ## 集成
 
-兼容任何支持 MCP 的智能体：
+兼容任何支持 MCP 的智能体——**所有开发工具共享同一份记忆**：
 
-- **OpenCode**（原生支持——包含 `auto-memory` 技能）
-- **Claude Code**、**Cursor**、**Codex CLI**（通过 Mnemosyne MCP）
+```
+OpenCode ─┐
+Claude Code ─┼──► Mnemosyne MCP (:8765) ──► Prometheus Memory（同一存储）
+Cursor ─────┤        ▲
+Codex CLI ──┘   REST API (:8777) — /api/context/briefing, /api/memory/*
+```
+
+### 各工具配置
+
+| 工具 | 配置 |
+|---|---|
+| **OpenCode** | 原生支持——复制内置技能：`cp -r skills/auto-memory ~/.opencode/skills/` |
+| **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
+| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
+| **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` `url = "http://localhost:8765/sse"` |
+| **任意智能体** | REST：`GET /api/context/briefing`（会话开始，约 500 token）+ Mnemosyne CLI/MCP 写入 |
+
+智能体 A 早上做出的决策，智能体 B 下午即可使用——工具不同，记忆相同。
+
+## Token 节省
+
+Prometheus 旨在**降低 token 开销**，而不仅仅是存储记忆：
+
+| 机制 | 如何节省 |
+|---|---|
+| **日志卸载**（`scripts/ref_manager.py`） | 大型工具输出（>500 字符）转为 `[ref:id]` 引用——上下文中最多减少 **61%** 的 token |
+| **L0→L3 压缩** | 原始事实聚合为场景和画像——每个被聚合的事实，recall 注入约减少 40 token |
+| **上下文简报** | `GET /api/context/briefing` 返回约 500 token 的压缩摘要（画像 + 场景 + 近期事实）——以最低成本开启每次会话 |
+| **节省计量器** | `GET /api/stats/savings` 估算累计节省的 token（卸载字节 ÷ 4 + 压缩），并在 UI 侧边栏显示 💰 卡片 |
 
 ## 对比
 

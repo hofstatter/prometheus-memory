@@ -217,6 +217,62 @@ def canvas_node(node_id):
                 return jsonify({"content": f.read_text()[:5000], "node_id": node_id})
     return jsonify({"content": f"Conteúdo offloaded não encontrado (node: {node_id})", "node_id": node_id})
 
+# ─── API: Context Briefing (inicio de sessao barato) ─────────
+
+@app.route("/api/context/briefing")
+def context_briefing():
+    """Resumo comprimido (~500 tokens) p/ agente iniciar sessao com contexto maximo
+    e custo minimo: persona L3 + cenas recentes + fatos recentes."""
+    max_chars = int(request.args.get("max_chars", "2000"))
+    sections = []
+
+    persona_path = MNEMOSYNE_HOME / "persona.md"
+    if persona_path.exists():
+        sections.append("## Persona\n" + persona_path.read_text(errors="replace")[:800])
+
+    raw = run_mnemosyne("recall", "cena", "5")
+    cenas = [m["content"][:200] for m in parse_mnemosyne_output(raw) if m.get("content")]
+    if cenas:
+        sections.append("## Cenas recentes\n" + "\n".join(f"- {c}" for c in cenas[:5]))
+
+    raw = run_mnemosyne("recall", "implementacao decisao correcao", "5")
+    fatos = [m["content"][:160] for m in parse_mnemosyne_output(raw) if m.get("content")]
+    if fatos:
+        sections.append("## Fatos recentes\n" + "\n".join(f"- {f}" for f in fatos[:5]))
+
+    briefing = "\n\n".join(sections)[:max_chars]
+    est_tokens = len(briefing) // 4
+    return jsonify({
+        "briefing": briefing,
+        "chars": len(briefing),
+        "tokens_estimated": est_tokens,
+        "usage": "Injete no system prompt no inicio da sessao do agente",
+    })
+
+
+# ─── API: Token Savings ──────────────────────────────────────
+
+@app.route("/api/stats/savings")
+def stats_savings():
+    import sys as _sys
+    for _cand in (str(SRC_DIR), str(SRC_DIR.parent / "scripts")):
+        if _cand not in _sys.path:
+            _sys.path.insert(0, _cand)
+    try:
+        from token_savings import compute_savings, offloaded_bytes
+        recalls = 0
+        raw = run_mnemosyne("stats")
+        import re as _re
+        m = _re.search(r"recall_count\D*(\d+)", raw)
+        if m:
+            recalls = int(m.group(1))
+        if not offloaded_bytes():
+            return jsonify(compute_savings(0))
+        return jsonify(compute_savings(recalls))
+    except Exception as e:
+        return jsonify({"error": "savings indisponivel", "detail": str(e)[:120]}), 500
+
+
 # ─── API: Search ───────────────────────────────────
 
 @app.route("/api/search")
