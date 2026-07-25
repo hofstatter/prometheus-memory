@@ -824,11 +824,11 @@ function renderGraph(){
     },
     layout:{
       type:'d3-force',
-      alpha:0.9,alphaMin:0.02,alphaDecay:0.03,
-      link:{distance:90,strength:0.5},
-      manyBody:{strength:-110},
-      center:{x:cw/2,y:ch/2,strength:0.3},
-      collide:{radius:34,strength:0.95},
+      alpha:0.5,alphaMin:0.001,alphaDecay:0.005,velocityDecay:0.5,
+      link:{distance:100,strength:0.35},
+      manyBody:{strength:-90},
+      center:{x:cw/2,y:ch/2,strength:0.12},
+      collide:{radius:36,strength:0.9},
       preventOverlap:true
     },
     behaviors:['drag-element-force','zoom-canvas','drag-canvas',{type:'hover-activate',degree:1,direction:'both',enable:e=>e.targetType==='node',state:'active',inactiveState:'inactive'}]
@@ -852,6 +852,9 @@ function renderGraph(){
 
   graphInstance.render();
   [600,1500,3000,5000].forEach(t=>setTimeout(()=>{try{graphInstance.fitView()}catch(e){}}, t));
+  // Reheat periódico: mantém o grafo "vivo" estilo Obsidian
+  if(window._graphReheat)clearInterval(window._graphReheat);
+  window._graphReheat=setInterval(()=>{if(currentView==='graph'&&graphRunning){try{graphInstance.layout()}catch(e){}}}, 25000);
 }
 function togglePhysics(){
   graphRunning=!graphRunning;
