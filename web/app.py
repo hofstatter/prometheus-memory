@@ -91,7 +91,11 @@ def extract_project(content: str) -> str:
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    resp = render_template("index.html")
+    from flask import make_response
+    r = make_response(resp)
+    r.headers["Cache-Control"] = "no-store, must-revalidate"
+    return r
 
 @app.route("/health")
 def health():
