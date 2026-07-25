@@ -132,6 +132,9 @@ python3 web/app.py     # http://localhost:8777
 | `PROMETHEUS_NOTES_DIR` | `~/notes` | 笔记目录 |
 | `PROMETHEUS_USER` | `$USER` | 画像记忆中使用的名字 |
 | `PROMETHEUS_PROJECT` | `geral` | 记忆的默认项目 |
+| `PROMETHEUS_PASSWORD` | — | **UI 登录密码**（绑定非 localhost 时必填） |
+| `PROMETHEUS_TOKEN` | — | 供智能体/脚本使用的 API Bearer 令牌 |
+| `PROMETHEUS_PROTECT_READS` | `false` | `true` = 整个界面都需要登录 |
 | `PROMETHEUS_PROJECTS` | — | 已知项目（逗号分隔） |
 | `PROMETHEUS_EXCLUDE` | — | 在界面中隐藏的内容（逗号分隔） |
 | `FIRECRAWL_API_KEY` | — | 抓取备用方案（可选） |
@@ -150,8 +153,13 @@ python3 web/app.py     # http://localhost:8777
 ## 安全
 
 - 默认绑定 `127.0.0.1`（无网络暴露）
+- **登录系统**：当 `PROMETHEUS_HOST != 127.0.0.1` 时，界面会在每个浏览器中要求输入一次 `PROMETHEUS_PASSWORD`（模态框），并签发 30 天 HMAC 会话。登录接口限流（每 IP 每分钟 5 次——窗口期内即使密码正确也需等待）
+- **API 令牌**：智能体/脚本使用 `Authorization: Bearer $PROMETHEUS_TOKEN` 代替密码登录
+- **作用域**：默认仅保护写操作（读取开放）；`PROMETHEUS_PROTECT_READS=true` 保护整个 API（HTML 外壳保持公开以便渲染登录框）
+- **单用户单存储**：无智能体隔离（信任边界 = 本机）。多租户作用域将在 v0.2 提供
 - 笔记端点的路径穿越防护
-- URL 导入的 SSRF 防护（仅允许公网 http/https）
+- URL 导入的 SSRF 防护，每次重定向都会重新验证
+- XSS 加固：集合 ID 消毒、代码块转义、严格 CSP 头
 - 源码中无任何密钥——仅使用环境变量
 - 渲染时的 HTML/JS 清洗（XSS 防护）
 
