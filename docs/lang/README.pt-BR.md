@@ -100,11 +100,28 @@ Detalhes completos em [ARCHITECTURE.md](../../ARCHITECTURE.md).
 ```bash
 git clone https://github.com/hofstatter/prometheus-memory.git
 cd prometheus-memory
-bash setup.sh
+python setup.py          # universal: Windows / macOS / Linux / Raspberry Pi
+# ou: bash setup.sh      (wrapper Unix)
 ```
 
-O `setup.sh` instala dependências, copia os scripts do pipeline, instala a
-skill auto-memory, cria cron jobs e ativa o serviço systemd da Web UI.
+O instalador detecta seu SO/arquitetura, pergunta o **idioma** (en/pt/es/zh),
+instala dependências e registra a Web UI por plataforma (systemd no Linux,
+launchd no macOS, instruções de Task Scheduler no Windows).
+
+### Plataformas suportadas
+
+| Plataforma | Status |
+|---|---|
+| Linux x86_64 | ✅ |
+| Linux ARM64 / Raspberry Pi 5 | ✅ |
+| macOS (Intel + Apple Silicon) | ✅ |
+| Windows 10/11 (x64) | ✅ |
+
+### Idiomas da UI 🌐
+
+A Web UI detecta automaticamente o idioma do navegador — **English, Português,
+Español e 中文** — e troca a qualquer momento pelo seletor 🌐 na barra superior
+(persiste por navegador). Defina `PROMETHEUS_LANG` no `.env` para forçar um padrão.
 
 Depois configure suas chaves:
 
