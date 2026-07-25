@@ -153,9 +153,9 @@ All options are environment variables — see [.env.example](.env.example):
 
 ## Screenshots
 
-| Timeline | Canvas | RAG | Notes |
-|---|---|---|---|
-| ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) |
+| Timeline | Graph | Canvas | RAG | Notes |
+|---|---|---|---|---|
+| ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Graph](docs/SCREENSHOTS/graph.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) |
 
 ## API (REST)
 
