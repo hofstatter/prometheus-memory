@@ -1,5 +1,7 @@
 # ⚡ Prometheus Memory
 
+> 🌐 **English** · [Português](docs/lang/README.pt-BR.md) · [Español](docs/lang/README.es.md) · [中文](docs/lang/README.zh-CN.md)
+
 > L0→L3 memory pipeline for AI Agents.
 > Turns raw conversations into personas, skills and diagrams.
 > Built on [Mnemosyne](https://github.com/abdiasrj/mnemosyne) (BEAM) + architecture inspired by TencentDB-Agent-Memory (L0→L3 pyramid).
@@ -98,8 +100,24 @@ Full details in [ARCHITECTURE.md](ARCHITECTURE.md).
 ```bash
 git clone https://github.com/hofstatter/prometheus-memory.git
 cd prometheus-memory
-bash setup.sh
+python setup.py          # universal: Windows / macOS / Linux / Raspberry Pi
+# or: bash setup.sh      (Unix wrapper)
 ```
+
+The installer auto-detects your OS/arch, asks your **language** (en/pt/es/zh), installs dependencies and registers the Web UI per platform (systemd on Linux, launchd on macOS, Task Scheduler instructions on Windows).
+
+### Platform support
+
+| Platform | Status |
+|---|---|
+| Linux x86_64 | ✅ |
+| Linux ARM64 / Raspberry Pi 5 | ✅ |
+| macOS (Intel + Apple Silicon) | ✅ |
+| Windows 10/11 (x64) | ✅ (native Python; OCR optional) |
+
+### UI Languages 🌐
+
+The Web UI auto-detects your browser language and supports **English, Português, Español and 中文** — switch anytime with the 🌐 selector in the top bar (persisted per browser). Set `PROMETHEUS_LANG` in `.env` to force a default.
 
 `setup.sh` installs dependencies, copies the pipeline scripts, installs the
 auto-memory skill, creates cron jobs and enables the Web UI systemd service.

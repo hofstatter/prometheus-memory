@@ -1,5 +1,7 @@
 # ⚡ Prometheus Memory
 
+> 🌐 [English](../../README.md) · **Português** · [Español](README.es.md) · [中文](README.zh-CN.md)
+
 > Pipeline de memória L0→L3 para Agentes IA.
 > Transforma conversas brutas em personas, skills e diagramas.
 > Baseado em [Mnemosyne](https://github.com/abdiasrj/mnemosyne) (BEAM) + arquitetura inspirada no TencentDB-Agent-Memory (pirâmide L0→L3).
