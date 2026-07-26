@@ -117,7 +117,7 @@ The installer auto-detects your OS/arch, asks your **language** (en/pt/es/zh), i
 
 ### UI Languages 🌐
 
-The Web UI auto-detects your browser language and supports **English, Português, Español and 中文** — switch anytime with the 🌐 selector in the top bar (persisted per browser). Set `PROMETHEUS_LANG` in `.env` to force a default.
+The Web UI auto-detects your browser language and supports **English, Português, Español and 中文** — switch anytime with the 🌐 selector in the top bar (persisted per browser). Set `PROMETHEUS_LANG` in `.env` to force a default. (The RAG tab renders as 检索增强 in Chinese.)
 
 `setup.sh` installs dependencies, copies the pipeline scripts, installs the
 auto-memory skill, creates cron jobs and enables the Web UI systemd service.
