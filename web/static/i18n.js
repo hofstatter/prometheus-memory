@@ -5,6 +5,8 @@
   const T = {
     // nav + busca
     'Buscar memórias...': {en:'Search memories...', es:'Buscar memorias...', zh:'搜索记忆...'},
+    'Todas as coleções': {en:'All collections', es:'Todas las colecciones', zh:'所有集合'},
+    'Todas': {en:'All', es:'Todas', zh:'全部'},
     'Todos': {en:'All', es:'Todos', zh:'全部'},
     '📐 Canvas': {en:'📐 Canvas', es:'📐 Lienzo', zh:'📐 画布'},
     '📄 RAG': {en:'📄 RAG', es:'📄 RAG', zh:'📄 RAG'},
@@ -116,7 +118,7 @@
   function inProjectCtx(node){
     let p = node.parentElement;
     while(p){
-      if(p.id === 'project-list' || p.id === 'g6-canvas' || (p.classList && p.classList.contains('project-badge'))) return true;
+      if(p.id === 'project-list' || p.id === 'g6-canvas' || p.id === 'rag-sidebar-collections' || (p.classList && p.classList.contains('project-badge'))) return true;
       p = p.parentElement;
     }
     return false;
