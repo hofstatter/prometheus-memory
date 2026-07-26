@@ -62,3 +62,7 @@ El instalador detecta tu SO y arquitectura, pregunta el **idioma** (en/pt/es/zh)
 - Single-user, store compartido (multi-tenant en v0.2)
 
 📖 **Documentación completa:** [README en inglés](../../README.md)
+
+## Idiomas de la UI 🌐
+
+La Web UI detecta el idioma del navegador — **English, Português, Español y 中文** — con selector 🌐. `PROMETHEUS_LANG` en `.env` fuerza un idioma. (La pestaña RAG aparece como 检索增强 en chino.)

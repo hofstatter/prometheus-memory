@@ -115,7 +115,7 @@ python setup.py          # 通用：Windows / macOS / Linux / 树莓派
 ### 界面语言 🌐
 
 Web 界面会自动检测浏览器语言——**English、Português、Español、中文**——并可通过顶部的
-🌐 选择器随时切换（按浏览器保存）。在 `.env` 中设置 `PROMETHEUS_LANG` 可强制默认语言。
+🌐 选择器随时切换（按浏览器保存）。在 `.env` 中设置 `PROMETHEUS_LANG` 可强制默认语言。（RAG 标签页在中文界面显示为「检索增强」。）
 
 ## 配置
 

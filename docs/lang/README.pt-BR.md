@@ -121,7 +121,7 @@ launchd no macOS, instruções de Task Scheduler no Windows).
 
 A Web UI detecta automaticamente o idioma do navegador — **English, Português,
 Español e 中文** — e troca a qualquer momento pelo seletor 🌐 na barra superior
-(persiste por navegador). Defina `PROMETHEUS_LANG` no `.env` para forçar um padrão.
+(persiste por navegador). Defina `PROMETHEUS_LANG` no `.env` para forçar um padrão. (A aba RAG aparece como 检索增强 em chinês.)
 
 Depois configure suas chaves:
 
