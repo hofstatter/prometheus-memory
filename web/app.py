@@ -217,6 +217,53 @@ def canvas_node(node_id):
                 return jsonify({"content": f.read_text()[:5000], "node_id": node_id})
     return jsonify({"content": f"Conteúdo offloaded não encontrado (node: {node_id})", "node_id": node_id})
 
+# ─── API: Resource monitor (tempo real) ──────────────────────
+
+@app.route("/api/stats/resources")
+def stats_resources():
+    import shutil
+    out = {"gpu": None, "ram": None, "disk": None, "process_mb": None}
+
+    try:
+        r = subprocess.run(
+            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=4)
+        if r.returncode == 0:
+            util, used, total = [float(x.strip()) for x in r.stdout.strip().splitlines()[0].split(",")]
+            out["gpu"] = {"util": util, "used_mb": used, "total_mb": total, "pct": round(used * 100 / total, 1)}
+    except Exception:
+        pass
+
+    try:
+        meminfo = {}
+        for line in open("/proc/meminfo"):
+            k, v = line.split(":")
+            meminfo[k] = int(v.strip().split()[0])
+        total = meminfo["MemTotal"] / 1048576
+        avail = meminfo.get("MemAvailable", 0) / 1048576
+        used = total - avail
+        out["ram"] = {"used_gb": round(used, 1), "total_gb": round(total, 1), "pct": round(used * 100 / total, 1)}
+    except Exception:
+        pass
+
+    try:
+        du = shutil.disk_usage(str(MNEMOSYNE_HOME))
+        used_gb = du.used / 1e9
+        out["disk"] = {"used_gb": round(used_gb, 1), "total_gb": round(du.total / 1e9, 1), "pct": round(du.used * 100 / du.total, 1)}
+    except Exception:
+        pass
+
+    try:
+        for line in open("/proc/self/status"):
+            if line.startswith("VmRSS"):
+                out["process_mb"] = round(int(line.split()[1]) / 1024, 1)
+                break
+    except Exception:
+        pass
+
+    return jsonify(out)
+
+
 # ─── API: Context Briefing (inicio de sessao barato) ─────────
 
 @app.route("/api/context/briefing")
