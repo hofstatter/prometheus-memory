@@ -79,6 +79,13 @@
     'limpar': {en:'clear', es:'limpiar', zh:'清除'},
     '🔍 Filtro:': {en:'🔍 Filter:', es:'🔍 Filtro:', zh:'🔍 筛选：'},
     '💰 Tokens economizados:': {en:'💰 Tokens saved:', es:'💰 Tokens ahorrados:', zh:'💰 已节省 token：'},
+    '⚡ Recursos': {en:'⚡ Resources', es:'⚡ Recursos', zh:'⚡ 资源'},
+    '· ao vivo': {en:'· live', es:'· en vivo', zh:'· 实时'},
+    'indisponível': {en:'unavailable', es:'no disponible', zh:'不可用'},
+    'Prometheus:': {en:'Prometheus:', es:'Prometheus:', zh:'Prometheus：'},
+    'RAM': {en:'RAM', es:'RAM', zh:'内存'},
+    'HD': {en:'Disk', es:'Disco', zh:'磁盘'},
+    'GPU': {en:'GPU', es:'GPU', zh:'显卡'},
     'offloading + compressão L0→L3': {en:'offloading + L0→L3 compression', es:'offloading + compresión L0→L3', zh:'卸载 + L0→L3 压缩'},
     // login modal
     'Área protegida — entre com a senha para continuar. A sessão dura 30 dias neste navegador.': {en:'Protected area — enter your password to continue. The session lasts 30 days in this browser.', es:'Área protegida — ingresa tu contraseña para continuar. La sesión dura 30 días en este navegador.', zh:'受保护区域——请输入密码继续。会话在此浏览器中持续 30 天。'},
