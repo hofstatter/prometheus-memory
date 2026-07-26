@@ -9,7 +9,7 @@
     'Todas': {en:'All', es:'Todas', zh:'全部'},
     'Todos': {en:'All', es:'Todos', zh:'全部'},
     '📐 Canvas': {en:'📐 Canvas', es:'📐 Lienzo', zh:'📐 画布'},
-    '📄 RAG': {en:'📄 RAG', es:'📄 RAG', zh:'📄 RAG'},
+    '📄 RAG': {en:'📄 RAG', es:'📄 RAG', zh:'📄 检索增强'},
     // projetos comuns (dados — traduzidos so no sidebar/grafo, nunca no conteudo)
     'default': {en:'default', es:'predeterminado', zh:'默认'},
     'geral': {en:'general', es:'general', zh:'通用'},
@@ -26,7 +26,7 @@
     '📋 Timeline': {en:'📋 Timeline', es:'📋 Timeline', zh:'📋 时间线'},
     '🕸️ Grafo': {en:'🕸️ Graph', es:'🕸️ Grafo', zh:'🕸️ 图谱'},
     '📐 Canvas — Fluxo do Agente': {en:'📐 Canvas — Agent Flow', es:'📐 Canvas — Flujo del Agente', zh:'📐 画布 — 智能体流程'},
-    '📄 RAG — Documentos': {en:'📄 RAG — Documents', es:'📄 RAG — Documentos', zh:'📄 RAG — 文档'},
+    '📄 RAG — Documentos': {en:'📄 RAG — Documents', es:'📄 RAG — Documentos', zh:'📄 检索增强 — 文档'},
     '📝 Notes — Captura Inteligente': {en:'📝 Notes — Smart Capture', es:'📝 Notas — Captura Inteligente', zh:'📝 笔记 — 智能捕获'},
     '📝 Notes': {en:'📝 Notes', es:'📝 Notas', zh:'📝 笔记'},
     // sidebar
