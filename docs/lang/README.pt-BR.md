@@ -53,6 +53,7 @@ literalmente **fica mais inteligente a cada ciclo**, sem intervenção humana.
 - 📝 **Notes** — importação por URL (GitHub, X/Twitter, sites) com sanitização e renderizador Markdown próprio
 - ✏️ **Editor inline** — edição e exclusão de memórias direto na UI
 - 💾 **Offloading de logs** — outputs grandes de ferramentas viram refs (até 61% de redução de tokens)
+- ⚡ **Monitor de recursos ao vivo** — barras de GPU/RAM/HD em tempo real + consumo do processo na sidebar da Timeline (atualiza a cada 3s)
 - 🧠 **Skill generation** — detecta padrões recorrentes nas cenas e gera skills reutilizáveis
 - 🎨 Dark mode, responsivo, zero build step (sem node_modules)
 

@@ -53,6 +53,7 @@ literally **gets smarter with every cycle**, with zero human intervention.
 - ✏️ **Inline Editor** — edit and delete memories directly in the UI (5 tabs + editor modal)
 - 🗄️ **Storage layer** — SQLite by default (WAL), PostgreSQL-ready interface (`DATABASE_URL`) landing in v0.2
 - 💾 **Log offloading** — large tool outputs become refs (up to 61% token reduction)
+- ⚡ **Live resource monitor** — real-time GPU/RAM/disk bars + process usage in the Timeline sidebar (updates every 3s)
 - 🧠 **Skill generation** — detects recurring patterns in scenes and generates reusable skills
 - 🎨 Dark mode, responsive, zero build step (no node_modules)
 
@@ -188,6 +189,9 @@ All options are environment variables — see [.env.example](.env.example):
 | `/api/canvas` | GET | Mermaid state diagram |
 | `/api/search?q=` | GET | Memory recall |
 | `/api/stats` | GET | Totals (memories, scenes, RAG docs, notes) |
+| `/api/stats/resources` | GET | Live GPU/RAM/disk/process usage |
+| `/api/stats/savings` | GET | Token savings estimate |
+| `/api/context/briefing` | GET | ~500-token compressed session briefing |
 | `/api/projects` | GET | Detected projects |
 | `/api/memory/<id>` | GET/PUT/DELETE | Memory detail / update / delete |
 | `/api/rag/collections` | GET/POST | RAG collections |

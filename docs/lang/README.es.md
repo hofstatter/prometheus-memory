@@ -28,6 +28,10 @@ python setup.py          # Windows / macOS / Linux / Raspberry Pi
 
 El instalador detecta tu SO y arquitectura, pregunta el **idioma** (en/pt/es/zh), instala dependencias y registra el servicio según la plataforma (systemd en Linux, launchd en macOS, Task Scheduler en Windows).
 
+## Recursos en vivo
+
+- ⚡ **Monitor de recursos en tiempo real** — barras de GPU/RAM/disco + consumo del proceso en la barra lateral (actualiza cada 3s)
+
 ## Plataformas soportadas
 
 | Plataforma | Estado |
