@@ -292,3 +292,34 @@ def search_notes():
                 "score": 100
             })
     return jsonify(results[:10])
+
+
+@notes_bp.post("/fts")
+def fts_notes():
+    """Busca FTS5 (rank) nas notas — upgrade do search por substring."""
+    data = request.get_json() or {}
+    query = (data.get("query") or "").strip()
+    if not query:
+        return jsonify([])
+    import sqlite3
+    from pathlib import Path as _P
+    db_path = _P(__import__("os").environ.get("PROMETHEUS_DB", _P.home() / ".hermes" / "mnemosyne" / "data" / "mnemosyne.db"))
+    db = sqlite3.connect(str(db_path))
+    try:
+        db.execute("""CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(name, content, tokenize='porter')""")
+        for f in NOTES_DIR.rglob("*.md"):
+            try:
+                db.execute("INSERT INTO notes_fts(name, content) VALUES(?, ?)",
+                           (f.relative_to(NOTES_DIR).as_posix(), f.read_text(errors="replace")))
+            except Exception:
+                continue
+        db.commit()
+        rows = db.execute(
+            "SELECT name, snippet(notes_fts, 1, '<b>', '</b>', '...', 30) FROM notes_fts WHERE notes_fts MATCH ? ORDER BY rank LIMIT 10",
+            (query,)
+        ).fetchall()
+        return jsonify([{"id": r[0], "snippet": r[1]} for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+    finally:
+        db.close()

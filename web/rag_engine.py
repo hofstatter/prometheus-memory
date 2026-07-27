@@ -63,6 +63,11 @@ class RAGEngine:
             CREATE INDEX IF NOT EXISTS idx_rag_docs_collection ON rag_documents(collection_id);
             CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc ON rag_chunks(document_id);
         """)
+        # sqlite-vec: tabela virtual KNN (vec0) — busca vetorial real, nao brute-force
+        try:
+            db.execute("CREATE VIRTUAL TABLE IF NOT EXISTS vec_chunks USING vec0(embedding float[384] distance_metric=cosine, +chunk_id TEXT)")
+        except Exception:
+            pass
         db.commit()
         db.close()
 
@@ -97,6 +102,10 @@ class RAGEngine:
             emb_blob = emb.tobytes()
             db.execute("INSERT INTO rag_chunks(id,document_id,chunk_index,content,embedding) VALUES(?,?,?,?,?)",
                        (cid, doc_id, i, chunk, emb_blob))
+            try:
+                db.execute("INSERT INTO vec_chunks(embedding, chunk_id) VALUES(?, ?)", (emb.astype("float32").tobytes(), cid))
+            except Exception:
+                pass
         db.commit()
         db.close()
         return {"document_id": doc_id, "chunks": len(chunks), "chars": len(text)}
@@ -155,6 +164,25 @@ class RAGEngine:
         q_vec = np.array(q_emb[0], dtype=np.float32)
 
         db = self._db()
+        # KNN via sqlite-vec (vec0) — ordem de magnitude mais rapido que brute-force
+        try:
+            knn = db.execute("""
+                SELECT rc.content, rc.document_id, rd.filename, rd.collection_id, vec.distance
+                FROM vec_chunks vec
+                JOIN rag_chunks rc ON rc.id = vec.chunk_id
+                JOIN rag_documents rd ON rc.document_id = rd.id
+                WHERE vec.embedding MATCH ? AND k = ?
+            """ + (" AND rd.collection_id = ?" if collection_id else "") + " ORDER BY vec.distance LIMIT ?",
+                (q_vec.tobytes(), top_k * 4, *((collection_id, top_k * 4) if collection_id else (top_k * 4,))))
+            rows = [(r[0], r[1], r[2], r[3], r[4]) for r in knn.fetchall()]
+            db.close()
+            out = [{"content": r[0][:500], "document_id": r[1], "filename": r[2],
+                    "collection_id": r[3], "score": round((1 - r[4]) * 100)} for r in rows]
+            out.sort(key=lambda x: -x["score"])
+            return out[:top_k]
+        except Exception:
+            pass
+
         if collection_id:
             rows = db.execute("""
                 SELECT rc.content, rc.document_id, rd.filename, rd.collection_id, rc.embedding
