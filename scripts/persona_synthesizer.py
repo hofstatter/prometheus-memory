@@ -11,7 +11,6 @@ import requests as http
 from datetime import datetime
 from pathlib import Path
 
-DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 PROMETHEUS_USER = os.environ.get("PROMETHEUS_USER", os.environ.get("USER", "user"))
 PROMETHEUS_PROJECT = os.environ.get("PROMETHEUS_PROJECT", "default")
 LOG_DIR = Path.home() / ".local" / "log"
@@ -34,9 +33,6 @@ def get_all_scenes() -> list:
     return scenes
 
 def synthesize_persona(scenes: list) -> str:
-    if not DEEPSEEK_KEY:
-        print("  DEEPSEEK_API_KEY nao configurada — persona pulada")
-        return ""
     prompt = f"""Analise as cenas de trabalho abaixo e crie um perfil de persona sintetico em portugues brasileiro.
 
 Cenas recentes (ultimas semanas):
@@ -50,19 +46,12 @@ Gere um perfil Markdown conciso (max 400 tokens):
 - Areas de foco e objetivos
 """
     try:
-        resp = http.post(
-            "https://api.deepseek.com/chat/completions",
-            headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
-            json={
-                "model": "deepseek-chat",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 500,
-                "temperature": 0.3
-            },
-            timeout=30
-        )
-        return resp.json()["choices"][0]["message"]["content"]
-    except Exception as e:
+        from llm_backend import call_llm, available, describe
+        if not available():
+            print(f"  backend LLM indisponivel ({describe()}) — persona pulada")
+            return ""
+        return call_llm(prompt, max_tokens=500, temperature=0.3, timeout=45)
+    except Exception:
         return ""
 
 def store_persona(persona: str):
@@ -82,7 +71,7 @@ def store_persona(persona: str):
     persona_path.write_text(f"# Persona — Atualizado {ts}\n\n{persona}")
 
 def generate_skills(scenes: list):
-    if not SKILL_GEN_DIR.exists() or not DEEPSEEK_KEY:
+    if not SKILL_GEN_DIR.exists():
         return 0
 
     prompt = f"""Analise estas cenas de trabalho e detecte padroes recorrentes (3+ ocorrencias).
@@ -96,18 +85,8 @@ Formato de resposta (JSON array, apenas se houver padroes):
 [{{"name": "nome-curto", "triggers": ["gatilho1"], "workflow": ["passo1", "passo2"], "tools": ["tool1"], "prompt_addon": "system prompt adicional"}}]
 """
     try:
-        resp = http.post(
-            "https://api.deepseek.com/chat/completions",
-            headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
-            json={
-                "model": "deepseek-chat",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 800,
-                "temperature": 0.3
-            },
-            timeout=45
-        )
-        text = resp.json()["choices"][0]["message"]["content"]
+        from llm_backend import call_llm
+        text = call_llm(prompt, max_tokens=800, temperature=0.3, timeout=45)
         if "NENHUM_PADRAO" in text:
             return 0
 

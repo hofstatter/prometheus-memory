@@ -1,0 +1,22 @@
+[
+  {"id": 1, "project": "bytex", "facts": ["[bytex] implementacao login por senha com sessao HMAC 30d", "[bytex] implementacao rate limit 5 por minuto no login", "[bytex] fix bypass de token vazio no auth"], "expected_topic": "autenticacao"},
+  {"id": 2, "project": "bytex", "facts": ["[bytex] criado workspace sandbox com containers Docker", "[bytex] agente instala pacotes no sandbox isolado", "[bytex] quota de disco por usuario no workspace"], "expected_topic": "workspace"},
+  {"id": 3, "project": "nb02", "facts": ["[nb02] otimizacao de RAM com zram lz4", "[nb02] earlyoom configurado para matar browsers primeiro", "[nb02] firefox user.js com processCount 4"], "expected_topic": "memoria ram"},
+  {"id": 4, "project": "prometheus", "facts": ["[prometheus] grafo G6 corrigido com estilo completo por no", "[prometheus] fisica continua estilo Obsidian no grafo", "[prometheus] screenshot do grafo adicionado ao README"], "expected_topic": "grafo"},
+  {"id": 5, "project": "prometheus", "facts": ["[prometheus] monitor de recursos em tempo real na sidebar", "[prometheus] endpoint /api/stats/resources com GPU RAM HD", "[prometheus] barras animadas a cada 3 segundos"], "expected_topic": "monitoramento"},
+  {"id": 6, "project": "bytex", "facts": ["[bytex] cookbook detecta hardware real i7-13700H", "[bytex] recomendacao de modelos por RAM livre e VRAM", "[bytex] pull de modelo ollama com progresso SSE"], "expected_topic": "cookbook"},
+  {"id": 7, "project": "prometheus", "facts": ["[prometheus] i18n com dicionario 50+ strings", "[prometheus] seletor de idioma no nav", "[prometheus] auto-detect do navegador"], "expected_topic": "internacionalizacao"},
+  {"id": 8, "project": "nb02", "facts": ["[nb02] resgate de VPS contabo com jump host", "[nb02] dump de bancos agentos e flask_ui", "[nb02] backup cnpj_brasil 62GB verificado"], "expected_topic": "resgate backup"},
+  {"id": 9, "project": "bytex", "facts": ["[bytex] office 3d com three.js no overview", "[bytex] mesa por agente com glow quando running", "[bytex] salas por time no escritorio 3d"], "expected_topic": "escritorio 3d"},
+  {"id": 10, "project": "bytex", "facts": ["[bytex] store com 264 personas agency-agents", "[bytex] instalar persona como agente com SOUL.md", "[bytex] catalogo com busca por divisao"], "expected_topic": "store personas"},
+  {"id": 11, "project": "nb02", "facts": ["[nb02] mnemosyne mcp na porta 8765 com token", "[nb02] integracao opencode com prometheus memory", "[nb02] skill auto-memory global instalada"], "expected_topic": "integracao memoria"},
+  {"id": 12, "project": "prometheus", "facts": ["[prometheus] login com modal glass na UI", "[prometheus] sessao HMAC de 30 dias", "[prometheus] rate limit bloqueia ate senha correta"], "expected_topic": "autenticacao"},
+  {"id": 13, "project": "bytex", "facts": ["[bytex] telegram gateway com long polling", "[bytex] comandos /agents e /use no telegram", "[bytex] whitelist de chat ids permitidos"], "expected_topic": "telegram"},
+  {"id": 14, "project": "prometheus", "facts": ["[prometheus] briefing de 500 tokens para inicio de sessao", "[prometheus] medidor de tokens economizados", "[prometheus] offloading de logs em refs"], "expected_topic": "economia tokens"},
+  {"id": 15, "project": "bytex", "facts": ["[bytex] teams com coordenador verdict OK FAIL", "[bytex] retry com feedback do coordenador", "[bytex] pipeline pesquisador redator publicador"], "expected_topic": "teams pipelines"},
+  {"id": 16, "project": "nb02", "facts": ["[nb02] brevo email delivered e opened confirmado", "[nb02] sender brevo validado no painel", "[nb02] firecrawl scrape real funcionando"], "expected_topic": "integracoes email"},
+  {"id": 17, "project": "bytex", "facts": ["[bytex] kanban de tasks com drag and drop", "[bytex] board com 4 colunas de status", "[bytex] modal de resultado completo por etapa"], "expected_topic": "kanban board"},
+  {"id": 18, "project": "prometheus", "facts": ["[prometheus] rag multimodal com pdf txt md docx", "[prometheus] ocr com tesseract por pagina", "[prometheus] busca vetorial fastembed 384d"], "expected_topic": "rag multimodal"},
+  {"id": 19, "project": "bytex", "facts": ["[bytex] chat com agente direto no dashboard", "[bytex] content library com busca unificada", "[bytex] schedule tab com timeline de loops"], "expected_topic": "dashboard premium"},
+  {"id": 20, "project": "nb02", "facts": ["[nb02] install.sh idempotente em ubuntu 24.04", "[nb02] setup.py multiplataforma windows mac linux", "[nb02] detecta OS e arch automaticamente"], "expected_topic": "instalador"}
+]

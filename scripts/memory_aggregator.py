@@ -13,7 +13,6 @@ from datetime import datetime
 from collections import defaultdict
 from pathlib import Path
 
-DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 LOG_DIR = Path.home() / ".local" / "log"
 CANVAS_DIR = Path.home() / ".hermes" / "mnemosyne"
 CANVAS_FILE = CANVAS_DIR / "canvas.mmd"
@@ -72,9 +71,6 @@ def group_by_project(memories: list) -> dict:
 def synthesize_scene_with_llm(project: str, memories: list) -> str:
     if len(memories) < 2:
         return None
-    if not DEEPSEEK_KEY:
-        facts_str = "; ".join(m["content"][:80] for m in memories[:5])
-        return f"[{project}] cena-sessao {len(memories)} fatos-recentes: {facts_str[:400]}"
     facts = "\n".join(f"- {m['content'][:300]}" for m in memories[:10])
     prompt = f"""Resuma estes fatos em uma cena tematica concisa (max 100 palavras).
 Use portugues brasileiro. Formato: "[{project}] cena [tema-resumido]: [descricao]"
@@ -83,22 +79,14 @@ Fatos:
 {facts}
 """
     try:
-        resp = http.post(
-            "https://api.deepseek.com/chat/completions",
-            headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
-            json={
-                "model": "deepseek-chat",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 200,
-                "temperature": 0.3
-            },
-            timeout=30
-        )
-        scene = resp.json()["choices"][0]["message"]["content"].strip()
-        return scene
-    except Exception as e:
-        facts_str = "; ".join(m["content"][:80] for m in memories[:5])
-        return f"[{project}] cena-sessao {len(memories)} fatos-recentes: {facts_str[:400]}"
+        from llm_backend import call_llm
+        scene = call_llm(prompt, max_tokens=200, temperature=0.3, timeout=30)
+        if scene:
+            return scene
+    except Exception:
+        pass
+    facts_str = "; ".join(m["content"][:80] for m in memories[:5])
+    return f"[{project}] cena-sessao {len(memories)} fatos-recentes: {facts_str[:400]}"
 
 def create_scene(project: str, memories: list):
     if len(memories) < 2:
