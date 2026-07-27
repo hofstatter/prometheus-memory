@@ -320,6 +320,47 @@ def stats_savings():
         return jsonify({"error": "savings indisponivel", "detail": str(e)[:120]}), 500
 
 
+# ─── API: Multi-agent Memory (v0.2) ───────────────
+
+@app.route("/api/memory/remember", methods=["POST"])
+def memory_remember():
+    data = request.get_json() or {}
+    content = (data.get("content") or "").strip()
+    if not content:
+        return jsonify({"error": "content vazio"}), 400
+    try:
+        from memory import remember
+        mid = remember(content, agent_id=data.get("agent_id", ""), source=data.get("source", "api"),
+                       importance=float(data.get("importance", 0.5)))
+        return jsonify({"id": mid, "stored": True, "agent_id": data.get("agent_id", "default")}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@app.route("/api/memory/recall", methods=["POST"])
+def memory_recall():
+    data = request.get_json() or {}
+    query = (data.get("query") or "").strip()
+    if not query:
+        return jsonify({"error": "query vazia"}), 400
+    try:
+        from memory import recall
+        results = recall(query, agent_id=data.get("agent_id", ""), top_k=int(data.get("top_k", 5)))
+        return jsonify({"count": len(results), "agent_id": data.get("agent_id", "default"),
+                        "results": [{"id": r.get("id"), "content": r.get("content"), "score": r.get("score")} for r in results]})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@app.route("/api/agents")
+def list_agents_memory():
+    try:
+        from memory import list_agents
+        return jsonify({"agents": list_agents()})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "agents": []})
+
+
 # ─── API: Search ───────────────────────────────────
 
 @app.route("/api/search")

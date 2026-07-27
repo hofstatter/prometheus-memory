@@ -270,6 +270,53 @@ Plus the skill: `cp -r skills/auto-memory ~/.config/opencode/skills/auto-memory/
 
 > ⚠️ Note: `~/.opencode/skills/` is the **legacy** OpenCode path (≤2025). Current OpenCode loads global skills from `~/.config/opencode/skills/`. The installer copies to both for safety. Restart OpenCode after changing config (not hot-reload).
 
+#### Multi-agent memory isolation (v0.2+)
+
+Each agent gets an isolated memory channel (`agent-<id>`) — memories never leak between agents:
+
+```bash
+# write (isolated per agent)
+curl -X POST localhost:8777/api/memory/remember -H "Authorization: Bearer $TOKEN"   -d '{"agent_id": "atlas", "content": "atlas prefers async python"}'
+# recall (atlas sees only atlas memories)
+curl -X POST localhost:8777/api/memory/recall -H "Authorization: Bearer $TOKEN"   -d '{"agent_id": "atlas", "query": "python"}'
+# list agents with memory
+curl localhost:8777/api/agents -H "Authorization: Bearer $TOKEN"
+```
+
+Shared context? Use `agent_id: ""` (the default shared channel).
+
+#### Google Antigravity
+
+Antigravity (Google's agentic IDE) supports MCP servers. Add to its MCP config (Settings → MCP Servers):
+
+```json
+{
+  "mcpServers": {
+    "mnemosyne": {
+      "type": "sse",
+      "url": "http://localhost:8765/sse",
+      "headers": { "Authorization": "Bearer <your-token>" }
+    }
+  }
+}
+```
+
+#### VSCode (Cline / Continue / Roo)
+
+Any MCP-compatible extension works. Example for Cline (`cline_mcp_settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "mnemosyne": {
+      "type": "sse",
+      "url": "http://localhost:8765/sse",
+      "headers": { "Authorization": "Bearer <your-token>" }
+    }
+  }
+}
+```
+
 #### OpenCode — per project
 
 Drop `skills/auto-memory/` into `<project>/.opencode/skills/` and add the same `mcp` block to the project's `opencode.jsonc`.
