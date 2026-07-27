@@ -45,7 +45,7 @@ El instalador detecta tu SO y arquitectura, pregunta el **idioma** (en/pt/es/zh)
 
 | Herramienta | Configuración |
 |---|---|
-| **OpenCode** | Nativa — `cp -r skills/auto-memory ~/.opencode/skills/` |
+| **OpenCode** | Global: `~/.config/opencode/opencode.jsonc` (bloco `mcp` con url :8765/sse + header Bearer) + `cp -r skills/auto-memory ~/.config/opencode/skills/auto-memory/`. ⚠️ `~/.opencode/skills/` es la ruta **legada** (OpenCode ≤2025); la actual es `~/.config/opencode/skills/`. Por proyecto: `<proyecto>/.opencode/skills/` + mismo bloque `mcp`. El MCP (`:8765`) exige token Bearer (`MNEMOSYNE_MCP_TOKEN`). |
 | **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
 | **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
 | **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` |

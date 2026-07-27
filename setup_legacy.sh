@@ -6,6 +6,7 @@ set -euo pipefail
 INSTALL_DIR="$HOME/prometheus-memory"
 BIN_DIR="$HOME/bin"
 SKILLS_DIR="$HOME/.opencode/skills"
+SKILLS_DIR_NEW="$HOME/.config/opencode/skills"
 SYSTEMD_DIR="$HOME/.config/systemd/user"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -55,7 +56,9 @@ echo "✓ Scripts do pipeline em $BIN_DIR"
 # 7. Skills → ~/.opencode/skills
 mkdir -p "$SKILLS_DIR"
 cp -r "$INSTALL_DIR/skills/auto-memory" "$SKILLS_DIR/"
-echo "✓ Skill auto-memory instalada"
+mkdir -p "$SKILLS_DIR_NEW"
+cp -r "$INSTALL_DIR/skills/auto-memory" "$SKILLS_DIR_NEW/"
+echo "✓ Skill auto-memory instalada (novo + legado)"
 
 # 8. .env
 if [ ! -f "$INSTALL_DIR/.env" ]; then

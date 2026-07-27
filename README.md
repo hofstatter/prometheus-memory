@@ -233,11 +233,45 @@ Codex CLI ──┘   REST API (:8777) — /api/context/briefing, /api/memory/*
 
 | Tool | Setup |
 |---|---|
-| **OpenCode** | Native — copy the included skill: `cp -r skills/auto-memory ~/.opencode/skills/` |
+| **OpenCode** | See below (global = every session, or per-project) |
 | **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
 | **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
 | **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` `url = "http://localhost:8765/sse"` |
 | **Any agent** | REST: `GET /api/context/briefing` (session start, ~500 tokens) + Mnemosyne CLI/MCP for writes |
+
+#### MCP authentication
+
+The Mnemosyne MCP server (`:8765`) requires a Bearer token (set in `MNEMOSYNE_MCP_TOKEN` on the service, or any token you choose when starting it). Pass it in the `headers` of your client config:
+
+```json
+"headers": { "Authorization": "Bearer <your-token>" }
+```
+
+#### OpenCode — global (recommended: works in every project)
+
+`~/.config/opencode/opencode.jsonc`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "mnemosyne": {
+      "type": "remote",
+      "url": "http://localhost:8765/sse",
+      "enabled": true,
+      "headers": { "Authorization": "Bearer <your-token>" }
+    }
+  }
+}
+```
+
+Plus the skill: `cp -r skills/auto-memory ~/.config/opencode/skills/auto-memory/`
+
+> ⚠️ Note: `~/.opencode/skills/` is the **legacy** OpenCode path (≤2025). Current OpenCode loads global skills from `~/.config/opencode/skills/`. The installer copies to both for safety. Restart OpenCode after changing config (not hot-reload).
+
+#### OpenCode — per project
+
+Drop `skills/auto-memory/` into `<project>/.opencode/skills/` and add the same `mcp` block to the project's `opencode.jsonc`.
 
 A decision made by agent A in the morning is available to agent B in the afternoon — different tools, same memory.
 
