@@ -49,7 +49,7 @@ literally **gets smarter with every cycle**, with zero human intervention.
 - 🔍 **Hierarchical Timeline** — L3→L2→L1 drill-down, sidebar with projects/dates/stats
 - 🕸️ **Knowledge Graph** — G6.js d3-force, Obsidian-style: glow, hover-activate, click → details
 - 📐 **Mermaid Canvas** — auto-generated agent state diagram, zoom, click → offloaded content
-- 📄 **Multimodal local RAG** — upload PDF, TXT, MD, DOCX, PNG, JPG with automatic OCR (Tesseract), vector search (cosine over fastembed 384d; sqlite-vec KNN planned for v0.2)
+- 📄 **Multimodal local RAG** — upload PDF, TXT, MD, DOCX, PNG, JPG with automatic OCR (Tesseract), **vector search via sqlite-vec KNN (vec0)** over fastembed 384d float32
 - 📝 **Notes** — URL import (GitHub, X/Twitter, websites) with sanitization and custom Markdown renderer
 - ✏️ **Inline Editor** — edit and delete memories directly in the UI (5 tabs + editor modal)
 - 🗄️ **Storage layer** — SQLite by default (WAL), PostgreSQL-ready interface (`DATABASE_URL`) landing in v0.2

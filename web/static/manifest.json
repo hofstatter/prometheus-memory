@@ -1,0 +1,9 @@
+{
+  "name": "Prometheus Memory",
+  "short_name": "Prometheus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#22d3ee",
+  "icons": []
+}
