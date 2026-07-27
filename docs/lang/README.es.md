@@ -70,3 +70,21 @@ El instalador detecta tu SO y arquitectura, pregunta el **idioma** (en/pt/es/zh)
 ## Idiomas de la UI 🌐
 
 La Web UI detecta el idioma del navegador — **English, Português, Español y 中文** — con selector 🌐. `PROMETHEUS_LANG` en `.env` fuerza un idioma. (La pestaña RAG aparece como 检索增强 en chino.)
+
+
+## Memoria Multi-Agente (aislamiento)
+
+Cada agente tiene un canal de memoria aislado (`agent-<id>`) — las memorias no se filtran entre agentes:
+
+```bash
+curl -X POST localhost:8777/api/memory/remember -H "Authorization: Bearer $TOKEN" \
+  -d '{"agent_id": "atlas", "content": "atlas prefiere python asíncrono"}'
+curl -X POST localhost:8777/api/memory/recall -H "Authorization: Bearer $TOKEN" \
+  -d '{"agent_id": "atlas", "query": "python"}'
+```
+
+Contexto compartido? Usa `agent_id: ""` (canal por defecto).
+
+## Google Antigravity y VSCode
+
+Ambos soportan MCP (SSE + Bearer) — ver la sección de integraciones del README principal para los bloques de configuración listos.

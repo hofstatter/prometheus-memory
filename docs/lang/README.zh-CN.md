@@ -210,3 +210,21 @@ Prometheus 旨在**降低 token 开销**，而不仅仅是存储记忆：
 ## 许可证
 
 MIT — 见 [LICENSE](../../LICENSE) 和 [NOTICE](../../NOTICE)。
+
+
+## 多智能体记忆（隔离）
+
+每个智能体拥有独立的记忆通道（`agent-<id>`）——记忆不会在智能体之间泄露：
+
+```bash
+curl -X POST localhost:8777/api/memory/remember -H "Authorization: Bearer $TOKEN" \
+  -d '{"agent_id": "atlas", "content": "atlas 偏好异步 Python"}'
+curl -X POST localhost:8777/api/memory/recall -H "Authorization: Bearer $TOKEN" \
+  -d '{"agent_id": "atlas", "query": "python"}'
+```
+
+共享上下文？使用 `agent_id: ""`（默认通道）。
+
+## Google Antigravity 与 VSCode
+
+两者均支持 MCP（SSE + Bearer）——配置块见主 README 的集成部分。
