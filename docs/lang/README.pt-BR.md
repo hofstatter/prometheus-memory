@@ -187,6 +187,23 @@ Todas as opções são variáveis de ambiente — ver [.env.example](../../.env.
 - Nenhuma chave no código — tudo via variáveis de ambiente
 - Sanitização de HTML/JS na renderização (XSS)
 
+## Memória Multi-Agente (isolamento)
+
+Cada agente tem um canal de memória isolado (`agent-<id>`) — memórias não vazam entre agentes:
+
+```bash
+# escrever (isolado por agente)
+curl -X POST localhost:8777/api/memory/remember -H "Authorization: Bearer $TOKEN" \
+  -d '{"agent_id": "atlas", "content": "atlas prefere python assíncrono"}'
+# recall (atlas vê só as memórias do atlas)
+curl -X POST localhost:8777/api/memory/recall -H "Authorization: Bearer $TOKEN" \
+  -d '{"agent_id": "atlas", "query": "python"}'
+# listar agentes com memória
+curl localhost:8777/api/agents -H "Authorization: Bearer $TOKEN"
+```
+
+Contexto compartilhado? Use `agent_id: ""` (canal padrão).
+
 ## Integrações
 
 Funciona com qualquer agente compatível com MCP — **uma memória compartilhada para todas as suas ferramentas**:
