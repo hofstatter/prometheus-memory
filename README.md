@@ -2,12 +2,13 @@
 
 > 🌐 **English** · [Português](docs/lang/README.pt-BR.md) · [Español](docs/lang/README.es.md) · [中文](docs/lang/README.zh-CN.md)
 
-> L0→L3 memory pipeline for AI Agents.
+> L0→L3 memory pipeline for AI Agents — **the second brain for AI agents** (not the monitoring tool).
 > Turns raw conversations into personas, skills and diagrams.
 > Built on [Mnemosyne](https://github.com/abdiasrj/mnemosyne) (BEAM) + architecture inspired by TencentDB-Agent-Memory (L0→L3 pyramid).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![eval: 90/100](https://img.shields.io/badge/eval-90%2F100-brightgreen)](evals/REPORT.md)
 [![Mnemosyne 3.12+](https://img.shields.io/badge/mnemosyne-3.12+-blueviolet.svg)](https://github.com/abdiasrj/mnemosyne)
 
 🌐 **English** | [Português](docs/lang/README.pt-BR.md) | [中文](docs/lang/README.zh-CN.md)
