@@ -180,7 +180,7 @@ Codex CLI ──┘   REST API (:8777) — /api/context/briefing, /api/memory/*
 
 | 工具 | 配置 |
 |---|---|
-| **OpenCode** | 原生支持——复制内置技能：`cp -r skills/auto-memory ~/.opencode/skills/` |
+| **OpenCode** | 全局（推荐）：`~/.config/opencode/opencode.jsonc`（`mcp` 块：url :8765/sse + Bearer header）+ `cp -r skills/auto-memory ~/.config/opencode/skills/auto-memory/`。⚠️ `~/.opencode/skills/` 是**旧路径**（OpenCode ≤2025），当前为 `~/.config/opencode/skills/`。按项目：`<项目>/.opencode/skills/` + 相同 `mcp` 块。MCP（:8765）需要 Bearer 令牌（`MNEMOSYNE_MCP_TOKEN`）。 |
 | **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
 | **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
 | **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` `url = "http://localhost:8765/sse"` |

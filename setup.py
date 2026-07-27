@@ -102,13 +102,12 @@ def main():
         for s in (INSTALL_DIR / "scripts").glob("*.py"):
             shutil.copy2(s, bin_dir / s.name)
 
-    # 5. Skill auto-memory
-    skills_dst = Path.home() / ".opencode" / "skills"
-    if not args.dry_run:
-        skills_dst.mkdir(parents=True, exist_ok=True)
-        src = INSTALL_DIR / "skills" / "auto-memory"
-        if src.exists():
-            shutil.copytree(src, skills_dst / "auto-memory", dirs_exist_ok=True)
+    # 5. Skill auto-memory (caminho novo + legado do OpenCode)
+    src = INSTALL_DIR / "skills" / "auto-memory"
+    if not args.dry_run and src.exists():
+        for base in (Path.home() / ".config" / "opencode" / "skills", Path.home() / ".opencode" / "skills"):
+            base.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(src, base / "auto-memory", dirs_exist_ok=True)
 
     # 6. .env com idioma
     env_file = INSTALL_DIR / ".env"
