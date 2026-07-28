@@ -10,3 +10,4 @@ beautifulsoup4==4.12.*
 lxml==5.3.*
 gunicorn==23.0.*
 pytest==8.3.*
+mnemosyne-memory==3.12.2
