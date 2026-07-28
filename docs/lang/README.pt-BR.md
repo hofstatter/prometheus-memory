@@ -204,6 +204,28 @@ curl localhost:8777/api/agents -H "Authorization: Bearer $TOKEN"
 
 Contexto compartilhado? Use `agent_id: ""` (canal padrão).
 
+## Skill Registry (Camada 1 — privada)
+
+O Prometheus é também um **registry privado de skills** — sua "oficina" onde você cria, edita e itera skills pela UI, e qualquer IDE (OpenCode, Cursor, VSCode) sincroniza dele:
+
+```bash
+# inserir skill via API
+curl -X POST localhost:8777/api/skills -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"minha-skill","content":"# Minha Skill\nconteúdo"}'
+# sincronizar p/ IDEs
+prometheus-skills sync            # OpenCode (~/.config/opencode/skills/)
+prometheus-skills sync --ide cursor
+prometheus-skills list
+```
+
+- **Camada 1 (privada):** skills suas, editáveis pela UI (aba 🧩 Skills), só você escreve
+- **Camada 2 (pública/GitHub):** publicar com `prometheus-skills publish <name>` quando estiver pronta
+- **Contribuição externa:** via Pull Request no repo (você aprova o merge)
+
+### Skill `ai-company` (16 analistas sêniors + pipeline de desenvolvimento)
+
+Incluída no registry: 16 analistas sêniors que conduzem o usuário pelo pipeline **PRD → aprovação → Tech Spec (Frontend, Backend, Banco de Dados) → validação → Sprints → validação → entrega**, com gates de aprovação humanos. Templates: `PRD.md`, `TECH_SPEC.md`, `SPRINT.md`, `VALIDATION.md`. Instalada globalmente no OpenCode (`~/.config/opencode/skills/ai-company/`) — funciona em todos os projetos e sessões.
+
 ## Integrações
 
 Funciona com qualquer agente compatível com MCP — **uma memória compartilhada para todas as suas ferramentas**:
