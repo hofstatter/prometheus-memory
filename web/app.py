@@ -320,6 +320,64 @@ def stats_savings():
         return jsonify({"error": "savings indisponivel", "detail": str(e)[:120]}), 500
 
 
+# ─── API: Skill Registry (Camada 1) ────────────────
+
+@app.route("/api/skills")
+def skills_list():
+    from skills_registry import list_skills
+    return jsonify({"skills": list_skills()})
+
+
+@app.route("/api/skills", methods=["POST"])
+def skills_create():
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip().lower().replace(" ", "-")
+    content = (data.get("content") or "").strip()
+    if not name or not content:
+        return jsonify({"error": "name e content obrigatorios"}), 400
+    from skills_registry import upsert_skill
+    result = upsert_skill(name, content, data.get("description", ""), data.get("roles_json", "[]"))
+    return jsonify(result), 201
+
+
+@app.route("/api/skills/<name>")
+def skills_get(name):
+    from skills_registry import get_skill
+    sk = get_skill(name)
+    if not sk:
+        return jsonify({"error": "skill nao encontrada"}), 404
+    return jsonify(sk)
+
+
+@app.route("/api/skills/<name>", methods=["PUT"])
+def skills_update(name):
+    data = request.get_json() or {}
+    content = (data.get("content") or "").strip()
+    if not content:
+        return jsonify({"error": "content obrigatorio"}), 400
+    from skills_registry import upsert_skill
+    result = upsert_skill(name, content, data.get("description", ""), data.get("roles_json", "[]"))
+    return jsonify(result)
+
+
+@app.route("/api/skills/<name>", methods=["DELETE"])
+def skills_delete(name):
+    from skills_registry import delete_skill
+    if not delete_skill(name):
+        return jsonify({"error": "skill nao encontrada"}), 404
+    return "", 204
+
+
+@app.route("/api/skills/<name>/raw")
+def skills_raw(name):
+    from skills_registry import get_skill
+    sk = get_skill(name)
+    if not sk:
+        return jsonify({"error": "skill nao encontrada"}), 404
+    from flask import Response
+    return Response(sk["content"], mimetype="text/markdown")
+
+
 # ─── API: Multi-agent Memory (v0.2) ───────────────
 
 @app.route("/api/memory/remember", methods=["POST"])
