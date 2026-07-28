@@ -103,7 +103,19 @@ prometheus-skills list
 
 ### Skill `ai-company` (16 analistas sêniors + pipeline de desarrollo)
 
-Incluida en el registry: 16 analistas sêniors que guían al usuario por el pipeline **PRD → aprobación → Tech Spec (Frontend, Backend, Base de Datos) → validación → Sprints → validación → entrega**, con gates de aprobación humana. Templates: `PRD.md`, `TECH_SPEC.md`, `SPRINT.md`, `VALIDATION.md`. Instalada globalmente en OpenCode — funciona en todos los proyectos y sesiones.
+Incluida en el registry y en `skills/ai-company/`: 16 analistas sêniors que guían al usuario por el pipeline **PRD (entrevista grill-me con checkpointing) → aprobación → Tech Spec (Frontend, Backend, Base de Datos) → Design Review → validación → Sprints → validación → entrega**, con gates de aprobación humana. Templates: `PRD.md`, `TECH_SPEC.md`, `SPRINT.md`, `VALIDATION.md`. Instalada globalmente en OpenCode — funciona en todos los proyectos y sesiones.
+
+**Skills embebidas:**
+
+| Archivo | Qué es | Crédito |
+|---|---|---|
+| `design/super-designer/` | **Autoridad única de diseño** — 20 mandamientos, 46 anti-patrones, 35 checks preflight, 3 dials (VARIANCE/MOTION/DENSITY). Toda UI pasa por un gate de Design Review obligatorio | basada en emilkowalski/skills, impeccable.style, tasteskill.dev |
+| `GRILL.md` | Entrevista implacable del PRD (1 pregunta a la vez) + **checkpointing por respuesta** en `brainstorms/` | mattpocock/skills |
+| `VIRAL.md` | 31 Principios de un Producto Viral — brújula de launch, **brand lane only** (landing/pricing/marketing) | Marc Lou |
+| `REVENUE.md` | Revenue-Centric Design — 101 principios de conversión/pricing/churn. **Licencia: atribución, prohibido gambling** | @richardrx (heliocosta-dev) |
+| `design/emil-design-eng.md` | Apéndice de referencia — animación, gestos, clip-path, toasts, performance, a11y. **En divergencia, super-designer gana** | emilkowalski |
+
+**Jerarquía de decisión:** super-designer (visual/UX) > VIRAL (copy/estructura de landing) > REVENUE (estrategia de ingresos). **Lane rules:** product lane (dashboards/apps) = super-designer sola; brand lane (landing/pricing) = super-designer + VIRAL + REVENUE.
 
 ## Google Antigravity y VSCode
 

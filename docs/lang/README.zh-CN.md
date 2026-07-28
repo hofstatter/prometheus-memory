@@ -243,7 +243,19 @@ prometheus-skills list
 
 ### 技能 `ai-company`（16 位高级分析师 + 开发流水线）
 
-注册中心内置：16 位高级分析师引导用户完成流水线 **PRD → 批准 → 技术规格（前端、后端、数据库）→ 验证 → 迭代冲刺 → 验证 → 交付**，含人工批准门。模板：`PRD.md`、`TECH_SPEC.md`、`SPRINT.md`、`VALIDATION.md`。已在 OpenCode 全局安装——适用于所有项目和会话。
+注册中心及 `skills/ai-company/` 内置：16 位高级分析师引导用户完成流水线 **PRD（grill-me 访谈 + 检查点）→ 批准 → 技术规格（前端、后端、数据库）→ 设计评审 → 验证 → 迭代冲刺 → 验证 → 交付**，含人工批准门。模板：`PRD.md`、`TECH_SPEC.md`、`SPRINT.md`、`VALIDATION.md`。已在 OpenCode 全局安装——适用于所有项目和会话。
+
+**内嵌技能：**
+
+| 文件 | 内容 | 致谢 |
+|---|---|---|
+| `design/super-designer/` | **唯一设计权威** — 20 条戒律、46 个反模式、35 项交付前检查、3 个调节旋钮（VARIANCE/MOTION/DENSITY）。所有 UI 必须通过强制设计评审门 | 基于 emilkowalski/skills、impeccable.style、tasteskill.dev |
+| `GRILL.md` | 毫不留情的 PRD 访谈（一次一个问题）+ 每个回答在 `brainstorms/` 中**保存检查点** | mattpocock/skills |
+| `VIRAL.md` | 病毒式产品的 31 条原则 — 发布指南，**仅限品牌层**（落地页/定价/营销） | Marc Lou |
+| `REVENUE.md` | 以收入为中心的设计 — 101 条转化/定价/流失原则。**许可证：需署名，禁止用于赌博** | @richardrx (heliocosta-dev) |
+| `design/emil-design-eng.md` | 参考附录 — 动画、手势、clip-path、toast、性能、无障碍。**如有分歧，以 super-designer 为准** | emilkowalski |
+
+**决策层级：** super-designer（视觉/UX）> VIRAL（落地页文案/结构）> REVENUE（收入策略）。**分层规则：** 产品层（仪表盘/应用）= 仅 super-designer；品牌层（落地页/定价）= super-designer + VIRAL + REVENUE。
 
 ## Google Antigravity 与 VSCode
 

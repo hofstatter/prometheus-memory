@@ -224,7 +224,19 @@ prometheus-skills list
 
 ### Skill `ai-company` (16 analistas sêniors + pipeline de desenvolvimento)
 
-Incluída no registry: 16 analistas sêniors que conduzem o usuário pelo pipeline **PRD → aprovação → Tech Spec (Frontend, Backend, Banco de Dados) → validação → Sprints → validação → entrega**, com gates de aprovação humanos. Templates: `PRD.md`, `TECH_SPEC.md`, `SPRINT.md`, `VALIDATION.md`. Instalada globalmente no OpenCode (`~/.config/opencode/skills/ai-company/`) — funciona em todos os projetos e sessões.
+Incluída no registry e em `skills/ai-company/`: 16 analistas sêniors que conduzem o usuário pelo pipeline **PRD (entrevista grill-me com checkpointing) → aprovação → Tech Spec (Frontend, Backend, Banco de Dados) → Design Review → validação → Sprints → validação → entrega**, com gates de aprovação humanos. Templates: `PRD.md`, `TECH_SPEC.md`, `SPRINT.md`, `VALIDATION.md`. Instalada globalmente no OpenCode (`~/.config/opencode/skills/ai-company/`) — funciona em todos os projetos e sessões.
+
+**Skills embutidas:**
+
+| Arquivo | O que é | Crédito |
+|---|---|---|
+| `design/super-designer/` | **Autoridade única de design** — 20 mandamentos, 46 anti-padrões, 35 checks preflight, 3 dials (VARIANCE/MOTION/DENSITY). Toda UI passa por um gate de Design Review obrigatório | baseada em emilkowalski/skills, impeccable.style, tasteskill.dev |
+| `GRILL.md` | Entrevista implacável do PRD (1 pergunta por vez) + **checkpointing por resposta** em `brainstorms/` | mattpocock/skills |
+| `VIRAL.md` | 31 Princípios de um Produto Viral — bússola de launch, **brand lane only** (landing/pricing/marketing) | Marc Lou |
+| `REVENUE.md` | Revenue-Centric Design — 101 princípios de conversão/pricing/churn. **Licença: atribuição, proibido gambling** | @richardrx (heliocosta-dev) |
+| `design/emil-design-eng.md` | Apêndice de referência — animação, gestos, clip-path, toasts, performance, a11y. **Em divergência, super-designer vence** | emilkowalski |
+
+**Hierarquia de decisão:** super-designer (visual/UX) > VIRAL (copy/estrutura de landing) > REVENUE (estratégia de receita). **Lane rules:** product lane (dashboards/apps) = super-designer sozinha; brand lane (landing/pricing) = super-designer + VIRAL + REVENUE.
 
 ## Integrações
 
