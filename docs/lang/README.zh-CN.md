@@ -225,6 +225,26 @@ curl -X POST localhost:8777/api/memory/recall -H "Authorization: Bearer $TOKEN" 
 
 共享上下文？使用 `agent_id: ""`（默认通道）。
 
+## 技能注册中心（第 1 层 — 私有）
+
+Prometheus 也是一个**私有技能注册中心**——你的"工作室"，可通过 UI 创建、编辑和迭代技能，任何 IDE（OpenCode、Cursor、VSCode）都可从中同步：
+
+```bash
+curl -X POST localhost:8777/api/skills -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"my-skill","content":"# My Skill\ncontent"}'
+prometheus-skills sync            # OpenCode（~/.config/opencode/skills/）
+prometheus-skills sync --ide cursor
+prometheus-skills list
+```
+
+- **第 1 层（私有）：** 你的技能，可通过 UI（🧩 Skills 标签页）编辑，只有你能写入
+- **第 2 层（公开/GitHub）：** 准备好后用 `prometheus-skills publish <名称>` 发布
+- **外部贡献：** 通过仓库的 Pull Request（你审核合并）
+
+### 技能 `ai-company`（16 位高级分析师 + 开发流水线）
+
+注册中心内置：16 位高级分析师引导用户完成流水线 **PRD → 批准 → 技术规格（前端、后端、数据库）→ 验证 → 迭代冲刺 → 验证 → 交付**，含人工批准门。模板：`PRD.md`、`TECH_SPEC.md`、`SPRINT.md`、`VALIDATION.md`。已在 OpenCode 全局安装——适用于所有项目和会话。
+
 ## Google Antigravity 与 VSCode
 
 两者均支持 MCP（SSE + Bearer）——配置块见主 README 的集成部分。
