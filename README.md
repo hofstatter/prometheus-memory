@@ -237,6 +237,22 @@ prometheus-skills list
 - **Camada 2 (pública/GitHub):** publicar com `prometheus-skills publish <name>` quando estiver pronta
 - **Contribuição externa:** via Pull Request no repo (você aprova o merge)
 
+### Skill `ai-company` (16 senior analysts + development pipeline)
+
+Included in the registry and in `skills/ai-company/`: 16 senior analysts guiding the user through **PRD (grill-me interview with checkpointing) → approval → Tech Spec (Frontend, Backend, Database) → Design Review → validation → Sprints → validation → delivery**, with human approval gates. Templates: `PRD.md`, `TECH_SPEC.md`, `SPRINT.md`, `VALIDATION.md`. Install globally in OpenCode (`~/.config/opencode/skills/ai-company/`) — works in every project and session.
+
+**Embedded skills:**
+
+| File | What it is | Credit |
+|---|---|---|
+| `design/super-designer/` | **Single design authority** — 20 commandments, 46 anti-patterns, 35 preflight checks, 3 dials (VARIANCE/MOTION/DENSITY). Every UI passes a mandatory Design Review gate | based on emilkowalski/skills, impeccable.style, tasteskill.dev |
+| `GRILL.md` | Relentless PRD interview (1 question at a time) + **per-answer checkpointing** in `brainstorms/` | mattpocock/skills |
+| `VIRAL.md` | 31 Principles of a Viral Product — launch compass, **brand lane only** (landing/pricing/marketing) | Marc Lou |
+| `REVENUE.md` | Revenue-Centric Design — 101 conversion/pricing/churn principles. **License: attribution, no gambling** | @richardrx (heliocosta-dev) |
+| `design/emil-design-eng.md` | Reference appendix — animation, gestures, clip-path, toasts, performance, a11y. **On divergence, super-designer wins** | emilkowalski |
+
+**Decision hierarchy:** super-designer (visual/UX) > VIRAL (landing copy/structure) > REVENUE (revenue strategy). **Lane rules:** product lane (dashboards/apps) = super-designer alone; brand lane (landing/pricing) = super-designer + VIRAL + REVENUE.
+
 ## Integrations
 
 Works with any MCP-compatible agent — **one shared memory for all your dev tools**:
