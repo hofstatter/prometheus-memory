@@ -308,12 +308,21 @@ def stats_savings():
     try:
         from token_savings import compute_savings, offloaded_bytes
         recalls = 0
-        raw = run_mnemosyne("stats")
-        import re as _re
-        m = _re.search(r"recall_count\D*(\d+)", raw)
-        if m:
-            recalls = int(m.group(1))
-        if not offloaded_bytes():
+        try:
+            import sqlite3 as _sq
+            _con = _sq.connect(f"file:{MNEMOSYNE_DB}?mode=ro", uri=True)
+            for _t in ("working_memory", "episodic_memory"):
+                _cols = [c[1] for c in _con.execute(f"PRAGMA table_info({_t})").fetchall()]
+                if "recall_count" in _cols:
+                    recalls += _con.execute(f"SELECT COALESCE(SUM(recall_count),0) FROM {_t}").fetchone()[0]
+            _con.close()
+        except Exception:
+            raw = run_mnemosyne("stats")
+            import re as _re
+            m = _re.search(r"recall_count\D*(\d+)", raw)
+            if m:
+                recalls = int(m.group(1))
+        if not offloaded_bytes() and not recalls:
             return jsonify(compute_savings(0))
         return jsonify(compute_savings(recalls))
     except Exception as e:
