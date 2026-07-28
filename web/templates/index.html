@@ -218,6 +218,17 @@
           </div>
         </div>
       </div>
+      <div id="skills-view" class="hidden" style="padding:20px;overflow-y:auto">
+        <h2 style="font-size:18px;font-weight:600;color:var(--ink);margin-bottom:16px">🧩 Skill Registry <span style="font-size:12px;color:var(--ink-muted);font-weight:400">— Camada 1 (privada)</span></h2>
+        <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px;margin-bottom:16px">
+          <div style="font-size:12px;color:var(--ink-muted);margin-bottom:8px">Inserir nova skill</div>
+          <input id="skill-name" placeholder="nome-da-skill" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
+          <input id="skill-desc" placeholder="descrição" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
+          <textarea id="skill-content" placeholder="conteúdo SKILL.md..." rows="6" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);outline:none;font-family:var(--font-mono)"></textarea>
+          <button onclick="createSkill()" class="btn-primary" style="margin-top:8px">Inserir skill</button>
+        </div>
+        <div id="skills-list"></div>
+      </div>
     </div>
   </main>
 
@@ -490,7 +501,7 @@ function confirmDeleteMemory(){
 function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
 
 // ── View switching ──
-function resetViews(){['memory-list','graph-view','canvas-view','rag-view','notes-view'].forEach(id=>document.getElementById(id).style.display='none');['btn-list','btn-graph','btn-canvas','btn-rag','btn-notes'].forEach(id=>document.getElementById(id).className='btn-inactive');document.getElementById('sidebar').style.display='block'}
+function resetViews(){['memory-list','graph-view','canvas-view','rag-view','notes-view','skills-view'].forEach(id=>document.getElementById(id).style.display='none');['btn-list','btn-graph','btn-canvas','btn-rag','btn-notes','btn-skills'].forEach(id=>document.getElementById(id).className='btn-inactive');document.getElementById('sidebar').style.display='block'}
 function showList(){resetViews();currentView='list';document.getElementById('memory-list').style.display='block';document.getElementById('btn-list').className='btn-active';if(graphInstance){try{graphInstance.destroy()}catch(e){}graphInstance=null}renderList()}
 function showGraph(){resetViews();currentView='graph';document.getElementById('graph-view').style.display='block';document.getElementById('graph-view').classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-graph').className='btn-active';
   if(allMemories.length===0){searchMemories()}else{renderGraph()}}
@@ -505,7 +516,41 @@ function showCanvas(){
   renderCanvas();
 }
 function showRAG(){resetViews();currentView='rag';var rv=document.getElementById('rag-view');rv.style.display='flex';rv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-rag').className='btn-active';loadRAGCollections();loadRAGDocs();loadRAGStats()}
-function showSkills(){resetViews();currentView='skills';document.getElementById('skills-view').style.display='block';document.getElementById('skills-view').classList.remove('hidden');document.getElementById('btn-skills').className='btn-active';loadSkills()}
+function showSkills(){resetViews();currentView='skills';var sv=document.getElementById('skills-view');sv.style.display='block';sv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-skills').className='btn-active';loadSkills()}
+function loadSkills(){
+  var list=document.getElementById('skills-list');
+  list.innerHTML='<div style="color:var(--ink-muted);font-size:12px">carregando...</div>';
+  fetch('/api/skills').then(r=>r.json()).then(d=>{
+    var skills=(d&&d.skills)||[];
+    if(skills.length===0){list.innerHTML='<div style="color:var(--ink-muted);font-size:12px">Nenhuma skill registrada.</div>';return}
+    list.innerHTML=skills.map(function(sk){
+      return '<div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'
+        +'<div><div style="font-size:14px;font-weight:600;color:var(--ink)">🧩 '+sk.name+' <span style="font-size:11px;color:var(--accent);font-weight:400">v'+sk.version+'</span></div>'
+        +'<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">'+(sk.description||'(sem descrição)')+'</div>'
+        +'<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">source: '+sk.source+' · checksum: '+sk.checksum+' · atualizado: '+sk.updated_at+'</div></div>'
+        +'<div style="display:flex;gap:8px;flex-shrink:0;margin-left:12px">'
+        +'<a href="/api/skills/'+encodeURIComponent(sk.name)+'/raw" target="_blank" class="btn-secondary" style="text-decoration:none;font-size:12px">📥 raw</a>'
+        +'<button onclick="deleteSkill(\''+sk.name.replace(/'/g,"\\'")+'\')" class="btn-secondary" style="font-size:12px;color:#f87171">🗑️</button>'
+        +'</div></div>'
+    }).join('')
+  }).catch(function(){list.innerHTML='<div style="color:#f87171;font-size:12px">Erro ao carregar skills.</div>'})
+}
+function createSkill(){
+  var name=document.getElementById('skill-name').value.trim();
+  var desc=document.getElementById('skill-desc').value.trim();
+  var content=document.getElementById('skill-content').value.trim();
+  if(!name||!content){alert('nome e conteúdo são obrigatórios');return}
+  fetch('/api/skills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,description:desc,content:content})})
+    .then(r=>{if(!r.ok)throw new Error();return r.json()})
+    .then(()=>{document.getElementById('skill-name').value='';document.getElementById('skill-desc').value='';document.getElementById('skill-content').value='';loadSkills()})
+    .catch(()=>alert('Erro ao inserir skill'))
+}
+function deleteSkill(name){
+  if(!confirm('Deletar skill "'+name+'" do registry?'))return;
+  fetch('/api/skills/'+encodeURIComponent(name),{method:'DELETE'})
+    .then(r=>{if(!r.ok&&r.status!==204)throw new Error();loadSkills()})
+    .catch(()=>alert('Erro ao deletar skill'))
+}
 function showNotes(){resetViews();currentView='notes';var nv=document.getElementById('notes-view');nv.style.display='flex';nv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-notes').className='btn-active';loadNotes()}
 
 // ── Canvas ──
@@ -978,23 +1023,12 @@ function togglePhysics(){
   }catch(e){}
 }
 
-// Deep-link de abas via hash (#graph, #canvas, #rag, #notes)
+// Deep-link de abas via hash (#graph, #canvas, #rag, #notes, #skills)
 (function(){
   const h = location.hash.replace('#','');
-  const map = {graph: showGraph, canvas: showCanvas, rag: showRAG, notes: showNotes, timeline: showList};
+  const map = {graph: showGraph, canvas: showCanvas, rag: showRAG, notes: showNotes, skills: showSkills, timeline: showList};
   if (map[h]) setTimeout(map[h], 300);
 })();
 </script>
-  <div id="skills-view" class="hidden" style="padding:20px;overflow-y:auto">
-    <h2 style="font-size:18px;font-weight:600;color:var(--ink);margin-bottom:16px">🧩 Skill Registry <span style="font-size:12px;color:var(--ink-muted);font-weight:400">— Camada 1 (privada)</span></h2>
-    <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px;margin-bottom:16px">
-      <div style="font-size:12px;color:var(--ink-muted);margin-bottom:8px">Inserir nova skill</div>
-      <input id="skill-name" placeholder="nome-da-skill" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
-      <input id="skill-desc" placeholder="descrição" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
-      <textarea id="skill-content" placeholder="conteúdo SKILL.md..." rows="6" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);outline:none;font-family:var(--font-mono)"></textarea>
-      <button onclick="createSkill()" class="btn-primary" style="margin-top:8px">Inserir skill</button>
-    </div>
-    <div id="skills-list"></div>
-  </div>
 </body>
 </html>

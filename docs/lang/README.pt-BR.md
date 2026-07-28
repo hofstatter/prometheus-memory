@@ -255,7 +255,7 @@ Codex CLI ──┘   REST API (:8777) — /api/context/briefing, /api/memory/*
 |---|---|
 | **OpenCode** | Nativo — copie a skill incluída: `cp -r skills/auto-memory ~/.opencode/skills/` |
 | **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
-| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
+| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"prometheus": {"url": "http://localhost:8765/sse"}}}` |
 | **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` `url = "http://localhost:8765/sse"` |
 | **Qualquer agente** | REST: `GET /api/context/briefing` (início de sessão, ~500 tokens) + CLI/MCP do Mnemosyne p/ escritas |
 
