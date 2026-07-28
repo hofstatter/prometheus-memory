@@ -19,13 +19,13 @@ pedir.
 
 **Sempre** execute estes passos antes de qualquer ação:
 
-1. `mnemosyne_stats` — verificar quantas memórias existem
-2. `mnemosyne_recall "últimas decisões e implementações"` — contexto relevante
+1. `prometheus_stats` — verificar quantas memórias existem
+2. `prometheus_recall "últimas decisões e implementações"` — contexto relevante
 3. Se houver memórias relevantes, mencione-as brevemente ("Contexto recuperado: N memórias encontradas sobre X")
 
 ### 2. DURANTE A SESSÃO — Gravar Automaticamente
 
-Após **cada** uma destas ações, chame `mnemosyne_remember`:
+Após **cada** uma destas ações, chame `prometheus_remember`:
 
 | Gatilho | Exemplo de store |
 |---|---|
@@ -54,7 +54,7 @@ Quando uma ferramenta retornar **> 500 caracteres** de output, faça offload:
 Quando a sessão estiver terminando (usuário sai, tarefa concluída):
 
 1. Liste mentalmente tudo que foi feito
-2. `mnemosyne_remember` com resumo consolidado:
+2. `prometheus_remember` com resumo consolidado:
    `"[PROJETO] sessao-resumo [N] implementações: [lista curta] — DD/MM/AAAA"`
 3. Execute: `python3 ~/bin/session_logger.py "PROJETO" "resumo da sessão" "ação1,ação2,ação3" TOKENS`
 4. Guarde o session_id retornado e inclua no último remember: `"... | ref:SESSION_ID"`

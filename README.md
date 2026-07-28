@@ -270,7 +270,7 @@ Codex CLI ──┘   REST API (:8777) — /api/context/briefing, /api/memory/*
 |---|---|
 | **OpenCode** | See below (global = every session, or per-project) |
 | **Claude Code** | `claude mcp add mnemosyne --transport sse http://localhost:8765/sse` |
-| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"mnemosyne": {"url": "http://localhost:8765/sse"}}}` |
+| **Cursor** | `.cursor/mcp.json` → `{"mcpServers": {"prometheus": {"url": "http://localhost:8765/sse"}}}` |
 | **Codex CLI** | `~/.codex/config.toml` → `[mcp_servers.mnemosyne]` `url = "http://localhost:8765/sse"` |
 | **Any agent** | REST: `GET /api/context/briefing` (session start, ~500 tokens) + Mnemosyne CLI/MCP for writes |
 
@@ -290,7 +290,7 @@ The Mnemosyne MCP server (`:8765`) requires a Bearer token (set in `MNEMOSYNE_MC
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "mnemosyne": {
+    "prometheus": {
       "type": "remote",
       "url": "http://localhost:8765/sse",
       "enabled": true,
@@ -326,7 +326,7 @@ Antigravity (Google's agentic IDE) supports MCP servers. Add to its MCP config (
 ```json
 {
   "mcpServers": {
-    "mnemosyne": {
+    "prometheus": {
       "type": "sse",
       "url": "http://localhost:8765/sse",
       "headers": { "Authorization": "Bearer <your-token>" }
@@ -342,7 +342,7 @@ Any MCP-compatible extension works. Example for Cline (`cline_mcp_settings.json`
 ```json
 {
   "mcpServers": {
-    "mnemosyne": {
+    "prometheus": {
       "type": "sse",
       "url": "http://localhost:8765/sse",
       "headers": { "Authorization": "Bearer <your-token>" }
