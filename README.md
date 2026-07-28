@@ -219,6 +219,24 @@ All options are environment variables — see [.env.example](.env.example):
 - No keys in source code — environment variables only
 - HTML/JS sanitization on rendering (XSS)
 
+## Skill Registry (Camada 1 — privada)
+
+O Prometheus é também um **registry privado de skills** — sua "oficina" onde você cria, edita e itera skills pela UI, e qualquer IDE (OpenCode, Cursor, VSCode) sincroniza dele:
+
+```bash
+# inserir skill via API
+curl -X POST localhost:8777/api/skills -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"minha-skill","content":"# Minha Skill\nconteúdo"}'
+# sincronizar p/ IDEs
+prometheus-skills sync            # OpenCode (~/.config/opencode/skills/)
+prometheus-skills sync --ide cursor
+prometheus-skills list
+```
+
+- **Camada 1 (privada):** skills suas, editáveis pela UI (`🧩 Skills` na aba), só você escreve
+- **Camada 2 (pública/GitHub):** publicar com `prometheus-skills publish <name>` quando estiver pronta
+- **Contribuição externa:** via Pull Request no repo (você aprova o merge)
+
 ## Integrations
 
 Works with any MCP-compatible agent — **one shared memory for all your dev tools**:

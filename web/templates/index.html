@@ -108,6 +108,7 @@
     <button onclick="showCanvas()" id="btn-canvas" class="btn-inactive">📐 Canvas</button>
     <button onclick="showRAG()" id="btn-rag" class="btn-inactive">📄 RAG</button>
     <button onclick="showNotes()" id="btn-notes" class="btn-inactive">📝 Notes</button>
+    <button onclick="showSkills()" id="btn-skills" class="btn-inactive">🧩 Skills</button>
     <button onclick="authAction()" id="btn-token" class="btn-inactive" title="Login">🔑</button>
     <span class="count" id="memory-count">carregando...</span>
   </nav>
@@ -504,6 +505,7 @@ function showCanvas(){
   renderCanvas();
 }
 function showRAG(){resetViews();currentView='rag';var rv=document.getElementById('rag-view');rv.style.display='flex';rv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-rag').className='btn-active';loadRAGCollections();loadRAGDocs();loadRAGStats()}
+function showSkills(){resetViews();currentView='skills';document.getElementById('skills-view').style.display='block';document.getElementById('skills-view').classList.remove('hidden');document.getElementById('btn-skills').className='btn-active';loadSkills()}
 function showNotes(){resetViews();currentView='notes';var nv=document.getElementById('notes-view');nv.style.display='flex';nv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-notes').className='btn-active';loadNotes()}
 
 // ── Canvas ──
@@ -983,5 +985,16 @@ function togglePhysics(){
   if (map[h]) setTimeout(map[h], 300);
 })();
 </script>
+  <div id="skills-view" class="hidden" style="padding:20px;overflow-y:auto">
+    <h2 style="font-size:18px;font-weight:600;color:var(--ink);margin-bottom:16px">🧩 Skill Registry <span style="font-size:12px;color:var(--ink-muted);font-weight:400">— Camada 1 (privada)</span></h2>
+    <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--ink-muted);margin-bottom:8px">Inserir nova skill</div>
+      <input id="skill-name" placeholder="nome-da-skill" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
+      <input id="skill-desc" placeholder="descrição" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
+      <textarea id="skill-content" placeholder="conteúdo SKILL.md..." rows="6" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);outline:none;font-family:var(--font-mono)"></textarea>
+      <button onclick="createSkill()" class="btn-primary" style="margin-top:8px">Inserir skill</button>
+    </div>
+    <div id="skills-list"></div>
+  </div>
 </body>
 </html>
