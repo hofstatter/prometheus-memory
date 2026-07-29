@@ -218,16 +218,26 @@
           </div>
         </div>
       </div>
-      <div id="skills-view" class="hidden" style="padding:20px;overflow-y:auto">
-        <h2 style="font-size:18px;font-weight:600;color:var(--ink);margin-bottom:16px">🧩 Skill Registry <span style="font-size:12px;color:var(--ink-muted);font-weight:400">— Camada 1 (privada)</span></h2>
-        <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px;margin-bottom:16px">
-          <div style="font-size:12px;color:var(--ink-muted);margin-bottom:8px">Inserir nova skill</div>
-          <input id="skill-name" placeholder="nome-da-skill" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
-          <input id="skill-desc" placeholder="descrição" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
-          <textarea id="skill-content" placeholder="conteúdo SKILL.md..." rows="6" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);outline:none;font-family:var(--font-mono)"></textarea>
-          <button onclick="createSkill()" class="btn-primary" style="margin-top:8px">Inserir skill</button>
+      <div id="skills-view" class="hidden" style="display:flex;gap:0;height:calc(100vh - 80px)">
+        <aside id="skills-sidebar" style="width:260px;min-width:260px;background:var(--surface-1);border-right:1px solid var(--hairline);padding:20px 16px;overflow-y:auto">
+          <div style="font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">🧩 Skills</div>
+          <div id="skills-list" style="margin-bottom:20px"><div style="color:var(--ink-muted);font-size:12px">carregando...</div></div>
+          <div style="font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">📅 Datas</div>
+          <div id="skills-dates" style="margin-bottom:20px"><div style="color:var(--ink-muted);font-size:12px">carregando...</div></div>
+          <div style="font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">📊 Stats</div>
+          <div id="skills-stats" style="color:var(--ink-muted);font-size:12px;line-height:1.8">carregando...</div>
+        </aside>
+        <div style="flex:1;overflow-y:auto;padding:24px" id="skills-main">
+          <h2 style="font-size:18px;font-weight:600;color:var(--ink);margin-bottom:16px">🧩 Skill Registry <span style="font-size:12px;color:var(--ink-muted);font-weight:400">— Camada 1 (privada)</span></h2>
+          <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px;margin-bottom:16px">
+            <div style="font-size:12px;color:var(--ink-muted);margin-bottom:8px">Inserir nova skill</div>
+            <input id="skill-name" placeholder="nome-da-skill" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
+            <input id="skill-desc" placeholder="descrição" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);margin-bottom:8px;outline:none">
+            <textarea id="skill-content" placeholder="conteúdo SKILL.md..." rows="6" style="width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 12px;font-size:13px;color:var(--ink);outline:none;font-family:var(--font-mono)"></textarea>
+            <button onclick="createSkill()" class="btn-primary" style="margin-top:8px">Inserir skill</button>
+          </div>
+          <div id="skill-detail"><div style="color:var(--ink-muted);font-size:13px">👈 Selecione uma skill na lateral para ver o conteúdo</div></div>
         </div>
-        <div id="skills-list"></div>
       </div>
     </div>
   </main>
@@ -516,24 +526,54 @@ function showCanvas(){
   renderCanvas();
 }
 function showRAG(){resetViews();currentView='rag';var rv=document.getElementById('rag-view');rv.style.display='flex';rv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-rag').className='btn-active';loadRAGCollections();loadRAGDocs();loadRAGStats()}
-function showSkills(){resetViews();currentView='skills';var sv=document.getElementById('skills-view');sv.style.display='block';sv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-skills').className='btn-active';loadSkills()}
+function showSkills(){resetViews();currentView='skills';var sv=document.getElementById('skills-view');sv.style.display='flex';sv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-skills').className='btn-active';loadSkills()}
+var allSkills=[],skillSelected='';
 function loadSkills(){
   var list=document.getElementById('skills-list');
   list.innerHTML='<div style="color:var(--ink-muted);font-size:12px">carregando...</div>';
   fetch('/api/skills').then(r=>r.json()).then(d=>{
-    var skills=(d&&d.skills)||[];
-    if(skills.length===0){list.innerHTML='<div style="color:var(--ink-muted);font-size:12px">Nenhuma skill registrada.</div>';return}
-    list.innerHTML=skills.map(function(sk){
-      return '<div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'
-        +'<div><div style="font-size:14px;font-weight:600;color:var(--ink)">🧩 '+sk.name+' <span style="font-size:11px;color:var(--accent);font-weight:400">v'+sk.version+'</span></div>'
-        +'<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">'+(sk.description||'(sem descrição)')+'</div>'
-        +'<div style="font-size:11px;color:var(--ink-muted);margin-top:4px">source: '+sk.source+' · checksum: '+sk.checksum+' · atualizado: '+sk.updated_at+'</div></div>'
-        +'<div style="display:flex;gap:8px;flex-shrink:0;margin-left:12px">'
-        +'<a href="/api/skills/'+encodeURIComponent(sk.name)+'/raw" target="_blank" class="btn-secondary" style="text-decoration:none;font-size:12px">📥 raw</a>'
-        +'<button onclick="deleteSkill(\''+sk.name.replace(/'/g,"\\'")+'\')" class="btn-secondary" style="font-size:12px;color:#f87171">🗑️</button>'
-        +'</div></div>'
-    }).join('')
+    allSkills=(d&&d.skills)||[];
+    if(allSkills.length===0){
+      list.innerHTML='<div style="color:var(--ink-muted);font-size:12px">Nenhuma skill registrada.</div>';
+      document.getElementById('skills-dates').innerHTML='<div style="color:var(--ink-muted);font-size:12px">—</div>';
+      document.getElementById('skills-stats').textContent='0 skills';
+      return
+    }
+    list.innerHTML=allSkills.map(function(sk){
+      return '<div class="sidebar-item'+(skillSelected===sk.name?' active':'')+'" onclick="showSkillDetail(\''+sk.name.replace(/'/g,"\\'")+'\')"><span class="sidebar-dot" style="background:var(--accent);box-shadow:0 0 6px var(--accent)"></span>'+escapeHtml(sk.name)+' <span style="font-size:10px;color:var(--ink-muted)">v'+sk.version+'</span></div>'
+    }).join('');
+    var dates={};
+    allSkills.forEach(function(sk){var dt=(sk.updated_at||'').slice(0,10);dates[dt]=(dates[dt]||0)+1});
+    document.getElementById('skills-dates').innerHTML=Object.keys(dates).sort().reverse().map(function(dt){
+      var p=dt.split('-');
+      return '<div style="font-size:12px;color:var(--ink-muted);line-height:1.9">'+p[2]+'/'+p[1]+'/'+p[0]+' <span style="color:var(--accent)">('+dates[dt]+')</span></div>'
+    }).join('');
+    var last=allSkills.map(function(sk){return sk.updated_at||''}).sort().reverse()[0];
+    document.getElementById('skills-stats').innerHTML=allSkills.length+' skill'+(allSkills.length>1?'s':'')+'<br>última atualização:<br>'+last;
+    if(skillSelected&&allSkills.some(function(sk){return sk.name===skillSelected})){showSkillDetail(skillSelected)}
   }).catch(function(){list.innerHTML='<div style="color:#f87171;font-size:12px">Erro ao carregar skills.</div>'})
+}
+function showSkillDetail(name){
+  skillSelected=name;
+  document.querySelectorAll('#skills-list .sidebar-item').forEach(function(el){el.classList.remove('active')});
+  fetch('/api/skills/'+encodeURIComponent(name)).then(r=>r.json()).then(function(sk){
+    if(sk.error)return;
+    document.getElementById('skill-detail').innerHTML=
+      '<div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div><div style="font-size:15px;font-weight:600;color:var(--ink)">🧩 '+escapeHtml(sk.name)+' <span style="font-size:11px;color:var(--accent);font-weight:400">v'+sk.version+'</span></div>'
+      +'<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">'+escapeHtml(sk.description||'(sem descrição)')+'</div></div>'
+      +'<div style="display:flex;gap:8px;flex-shrink:0;margin-left:12px">'
+      +'<a href="/api/skills/'+encodeURIComponent(sk.name)+'/raw" target="_blank" class="btn-secondary" style="text-decoration:none;font-size:12px">📥 raw</a>'
+      +'<button onclick="deleteSkill(\''+sk.name.replace(/'/g,"\\'")+'\')" class="btn-secondary" style="font-size:12px;color:#f87171">🗑️</button>'
+      +'</div></div>'
+      +'<div style="font-size:11px;color:var(--ink-muted);margin-bottom:10px">source: '+escapeHtml(sk.source)+' · checksum: '+escapeHtml(sk.checksum)+' · criado: '+escapeHtml(sk.created_at||'')+' · atualizado: '+escapeHtml(sk.updated_at||'')+'</div>'
+      +'<pre style="background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px;font-size:12px;color:var(--ink);white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow-y:auto;margin:0;font-family:var(--font-mono)">'+escapeHtml(sk.content||'')+'</pre>'
+      +'</div>';
+    document.querySelectorAll('#skills-list .sidebar-item').forEach(function(el){
+      if(el.textContent.trim().indexOf(name)===0)el.classList.add('active')
+    });
+  }).catch(function(){document.getElementById('skill-detail').innerHTML='<div style="color:#f87171;font-size:12px">Erro ao carregar skill.</div>'})
 }
 function createSkill(){
   var name=document.getElementById('skill-name').value.trim();
@@ -548,7 +588,7 @@ function createSkill(){
 function deleteSkill(name){
   if(!confirm('Deletar skill "'+name+'" do registry?'))return;
   fetch('/api/skills/'+encodeURIComponent(name),{method:'DELETE'})
-    .then(r=>{if(!r.ok&&r.status!==204)throw new Error();loadSkills()})
+    .then(r=>{if(!r.ok&&r.status!==204)throw new Error();if(skillSelected===name){skillSelected='';document.getElementById('skill-detail').innerHTML='<div style="color:var(--ink-muted);font-size:13px">👈 Selecione uma skill na lateral para ver o conteúdo</div>'}loadSkills()})
     .catch(()=>alert('Erro ao deletar skill'))
 }
 function showNotes(){resetViews();currentView='notes';var nv=document.getElementById('notes-view');nv.style.display='flex';nv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-notes').className='btn-active';loadNotes()}
