@@ -98,6 +98,7 @@ prometheus-skills list
 ```
 
 - **Capa 1 (privada):** tus skills, editables por la UI (pestaña 🧩 Skills), solo tú escribes
+- **UI de la pestaña 🧩 Skills:** barra lateral izquierda (lista de skills, 📅 fechas, 📊 stats) + visor de contenido con descarga raw y delete
 - **Capa 2 (pública/GitHub):** publica con `prometheus-skills publish <nombre>` cuando esté lista
 - **Contribución externa:** vía Pull Request en el repo (tú apruebas el merge)
 
