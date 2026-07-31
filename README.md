@@ -233,10 +233,10 @@ prometheus-skills sync --ide cursor
 prometheus-skills list
 ```
 
-- **Camada 1 (privada):** skills suas, editáveis pela UI (`🧩 Skills` na aba), só você escreve
-- **UI da aba 🧩 Skills:** sidebar esquerda (lista de skills, 📅 datas, 📊 stats) + visualizador de conteúdo com download raw e delete
-- **Camada 2 (pública/GitHub):** publicar com `prometheus-skills publish <name>` quando estiver pronta
-- **Contribuição externa:** via Pull Request no repo (você aprova o merge)
+- **Layer 1 (private):** your skills, editable via the UI (`🧩 Skills` tab), only you can write
+- **🧩 Skills tab UI:** left sidebar (skill list, 📅 dates, 📊 stats) + content viewer with raw download and delete
+- **Layer 2 (public/GitHub):** publish with `prometheus-skills publish <name>` when ready
+- **External contribution:** via Pull Request on the repo (you approve the merge)
 
 ### Skill `ai-company` (16 senior analysts + development pipeline)
 

@@ -337,6 +337,12 @@ def skills_list():
     return jsonify({"skills": list_skills()})
 
 
+def _validate_skill_name(name: str) -> bool:
+    """Slug validation: lowercase a-z, 0-9, hyphen and underscore."""
+    import re as _re
+    return bool(_re.match(r"^[a-z0-9_-]+$", name))
+
+
 @app.route("/api/skills", methods=["POST"])
 def skills_create():
     data = request.get_json() or {}
@@ -344,6 +350,8 @@ def skills_create():
     content = (data.get("content") or "").strip()
     if not name or not content:
         return jsonify({"error": "name e content obrigatorios"}), 400
+    if not _validate_skill_name(name):
+        return jsonify({"error": "name invalido: use apenas letras minusculas, numeros, hifen e underscore"}), 400
     from skills_registry import upsert_skill
     result = upsert_skill(name, content, data.get("description", ""), data.get("roles_json", "[]"))
     return jsonify(result), 201
@@ -364,6 +372,8 @@ def skills_update(name):
     content = (data.get("content") or "").strip()
     if not content:
         return jsonify({"error": "content obrigatorio"}), 400
+    if not _validate_skill_name(name):
+        return jsonify({"error": "name invalido: use apenas letras minusculas, numeros, hifen e underscore"}), 400
     from skills_registry import upsert_skill
     result = upsert_skill(name, content, data.get("description", ""), data.get("roles_json", "[]"))
     return jsonify(result)

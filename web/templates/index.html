@@ -539,16 +539,21 @@ function loadSkills(){
       document.getElementById('skills-stats').textContent='0 skills';
       return
     }
-    list.innerHTML=allSkills.map(function(sk){
-      return '<div class="sidebar-item'+(skillSelected===sk.name?' active':'')+'" onclick="showSkillDetail(\''+sk.name.replace(/'/g,"\\'")+'\')"><span class="sidebar-dot" style="background:var(--accent);box-shadow:0 0 6px var(--accent)"></span>'+escapeHtml(sk.name)+' <span style="font-size:10px;color:var(--ink-muted)">v'+sk.version+'</span></div>'
+    list.innerHTML=allSkills.map(function(sk,idx){
+      return '<div class="sidebar-item" data-idx="'+idx+'"'+(skillSelected===sk.name?' active':'')+'"><span class="sidebar-dot" style="background:var(--accent);box-shadow:0 0 6px var(--accent)"></span>'+escapeHtml(sk.name)+' <span style="font-size:10px;color:var(--ink-muted)">v'+sk.version+'</span></div>'
     }).join('');
+    list.onclick=function(e){
+      var item=e.target.closest?e.target.closest('.sidebar-item'):null;
+      if(item&&allSkills[parseInt(item.dataset.idx)])showSkillDetail(allSkills[parseInt(item.dataset.idx)].name)
+    };
     var dates={};
-    allSkills.forEach(function(sk){var dt=(sk.updated_at||'').slice(0,10);dates[dt]=(dates[dt]||0)+1});
-    document.getElementById('skills-dates').innerHTML=Object.keys(dates).sort().reverse().map(function(dt){
+    allSkills.forEach(function(sk){var dt=(sk.updated_at||'').slice(0,10);if(dt)dates[dt]=(dates[dt]||0)+1});
+    var dateKeys=Object.keys(dates).sort().reverse();
+    document.getElementById('skills-dates').innerHTML=dateKeys.length?dateKeys.map(function(dt){
       var p=dt.split('-');
       return '<div style="font-size:12px;color:var(--ink-muted);line-height:1.9">'+p[2]+'/'+p[1]+'/'+p[0]+' <span style="color:var(--accent)">('+dates[dt]+')</span></div>'
-    }).join('');
-    var last=allSkills.map(function(sk){return sk.updated_at||''}).sort().reverse()[0];
+    }).join(''):'<div style="color:var(--ink-muted);font-size:12px">—</div>';
+    var last=allSkills.map(function(sk){return sk.updated_at||''}).filter(Boolean).sort().reverse()[0]||'—';
     document.getElementById('skills-stats').innerHTML=allSkills.length+' skill'+(allSkills.length>1?'s':'')+'<br>última atualização:<br>'+last;
     if(skillSelected&&allSkills.some(function(sk){return sk.name===skillSelected})){showSkillDetail(skillSelected)}
   }).catch(function(){list.innerHTML='<div style="color:#f87171;font-size:12px">Erro ao carregar skills.</div>'})
@@ -565,13 +570,14 @@ function showSkillDetail(name){
       +'<div style="font-size:12px;color:var(--ink-muted);margin-top:2px">'+escapeHtml(sk.description||'(sem descrição)')+'</div></div>'
       +'<div style="display:flex;gap:8px;flex-shrink:0;margin-left:12px">'
       +'<a href="/api/skills/'+encodeURIComponent(sk.name)+'/raw" target="_blank" class="btn-secondary" style="text-decoration:none;font-size:12px">📥 raw</a>'
-      +'<button onclick="deleteSkill(\''+sk.name.replace(/'/g,"\\'")+'\')" class="btn-secondary" style="font-size:12px;color:#f87171">🗑️</button>'
+      +'<button onclick="deleteSkill(skillSelected)" class="btn-secondary" style="font-size:12px;color:#f87171">🗑️</button>'
       +'</div></div>'
       +'<div style="font-size:11px;color:var(--ink-muted);margin-bottom:10px">source: '+escapeHtml(sk.source)+' · checksum: '+escapeHtml(sk.checksum)+' · criado: '+escapeHtml(sk.created_at||'')+' · atualizado: '+escapeHtml(sk.updated_at||'')+'</div>'
       +'<pre style="background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px;font-size:12px;color:var(--ink);white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow-y:auto;margin:0;font-family:var(--font-mono)">'+escapeHtml(sk.content||'')+'</pre>'
       +'</div>';
     document.querySelectorAll('#skills-list .sidebar-item').forEach(function(el){
-      if(el.textContent.trim().indexOf(name)===0)el.classList.add('active')
+      var idx=parseInt(el.dataset.idx);
+      if(!isNaN(idx)&&allSkills[idx]&&allSkills[idx].name===name)el.classList.add('active')
     });
   }).catch(function(){document.getElementById('skill-detail').innerHTML='<div style="color:#f87171;font-size:12px">Erro ao carregar skill.</div>'})
 }
