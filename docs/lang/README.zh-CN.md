@@ -238,6 +238,7 @@ prometheus-skills list
 ```
 
 - **第 1 层（私有）：** 你的技能，可通过 UI（🧩 Skills 标签页）编辑，只有你能写入
+- **🧩 Skills 标签页 UI：** 左侧边栏（技能列表、📅 日期、📊 统计）+ 内容查看器，支持原始下载和删除
 - **第 2 层（公开/GitHub）：** 准备好后用 `prometheus-skills publish <名称>` 发布
 - **外部贡献：** 通过仓库的 Pull Request（你审核合并）
 
