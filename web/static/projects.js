@@ -159,6 +159,8 @@
         ${kpi('Última implementação', rep ? rep.last_implementation : '')}
       </div>
 
+      <div id="pm-connections" style="margin-bottom:18px"></div>
+
       <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Kanban</h3>
       <div id="pm-kanban" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">${renderKanban(events)}</div>
 
@@ -166,6 +168,7 @@
       <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px;overflow-x:auto">
         ${renderTimeline(events)}
       </div>`;
+  loadPMConnections(slug);
   }
 
   function kanbanCol(title, items, color){
@@ -264,6 +267,146 @@
     drawer.setAttribute('aria-hidden', 'true');
   }
 
+  // ── Conexões & Custos (Fase A2) ────────────────────────────────────
+  function loadPMConnections(slug){
+    const el = document.getElementById('pm-connections');
+    if(!el) return;
+    el.innerHTML = '<div style="color:var(--ink-muted);font-size:12px">carregando conexões...</div>';
+    Promise.all([
+      fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/connections').then(r => r.json()).catch(() => ({connections: [], alerts: []})),
+      fetch('/api/pm/connections/summary').then(r => r.json()).catch(() => ({}))
+    ]).then(([data, summ]) => {
+      S.connections = data.connections || [];
+      renderConnections(el, slug, S.connections, data.alerts || [], summ || {});
+    });
+  }
+
+  const CONN_FIELD = (id, ph, w) => `<input id="${id}" placeholder="${esc(ph)}" style="width:${w||'100%'};background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 10px;font-size:12px;color:var(--ink);outline:none">`;
+
+  function billingBadge(t){
+    const map = {subscription:['#eab308','assinatura'], paygo:['#0ea5e9','paygo'], free:['#6b7280','grátis'], unknown:['#6b7280','?']};
+    const [c, label] = map[t] || map.unknown;
+    return `<span style="font-size:10px;font-weight:600;color:${c};background:${c}1a;border:1px solid ${c}40;border-radius:999px;padding:2px 8px">${label}</span>`;
+  }
+
+  function connAlertBadges(id, alerts){
+    const a = alerts.filter(x => x.id === id);
+    if(!a.length) return '';
+    const color = {error:'#ef4444', warn:'#eab308', info:'#0ea5e9'};
+    return a.map(x => `<div style="font-size:10px;font-weight:600;color:${color[x.level]||'#0ea5e9'};margin-top:4px">⚠ ${esc(x.text)}</div>`).join('');
+  }
+
+  function renderConnections(el, slug, conns, alerts, summ){
+    const rows = conns.map(c => `<tr style="border-bottom:1px solid var(--hairline)">
+      <td style="padding:8px 6px;font-size:13px;color:var(--ink);font-weight:500">${esc(c.name)}</td>
+      <td style="padding:8px 6px;font-size:12px;color:var(--ink-muted)">${esc(c.provider || '—')}</td>
+      <td style="padding:8px 6px;font-size:12px;color:var(--ink-muted);font-family:var(--font-mono)">${esc(c.masked || '—')}</td>
+      <td style="padding:8px 6px">${billingBadge(c.billing_type)}</td>
+      <td style="padding:8px 6px;font-size:12px;color:var(--ink)">${c.cost_usd_month != null ? '$' + Number(c.cost_usd_month).toFixed(2) + '/mês' : '—'}</td>
+      <td style="padding:8px 6px;font-size:12px;color:var(--ink-muted)">${esc(c.expires_at || '—')}</td>
+      <td style="padding:8px 6px;font-size:11px">${connAlertBadges(c.id, alerts)}</td>
+      <td style="padding:8px 6px"><button onclick="editPMConnection('${esc(c.id)}')" style="background:none;border:1px solid var(--hairline);border-radius:var(--radius-sm);color:var(--ink-muted);font-size:11px;cursor:pointer;padding:3px 8px">✏️</button></td>
+    </tr>`).join('') || '<tr><td colspan="8" style="padding:10px 6px;font-size:12px;color:var(--ink-muted)">Nenhuma conexão registrada — use "Re-scan .env"</td></tr>';
+
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">🔑 Conexões & Custos</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--ink-muted)">Total: <b style="color:var(--ink)">${summ.total_cost_usd_month != null ? '$' + Number(summ.total_cost_usd_month).toFixed(2) + '/mês' : '—'}</b></span>
+          ${(summ.unused_keys || 0) > 0 ? `<span style="font-size:11px;color:#ef4444;font-weight:600">${summ.unused_keys} sem uso</span>` : ''}
+          ${(summ.expiring_keys || 0) > 0 ? `<span style="font-size:11px;color:#eab308;font-weight:600">${summ.expiring_keys} expirando</span>` : ''}
+          <button onclick="scanPMConnections('${esc(slug)}')" class="btn-secondary" style="font-size:11px;padding:5px 10px">Re-scan .env</button>
+          <button onclick="togglePMConnForm()" class="btn-primary" style="font-size:11px;padding:5px 10px">➕</button>
+        </div>
+      </div>
+      <div id="pm-conn-form" style="display:none;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          ${CONN_FIELD('conn-name', 'nome (ex: DEEPSEEK_API_KEY)')}
+          ${CONN_FIELD('conn-provider', 'provedor (ex: DeepSeek)')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+          ${CONN_FIELD('conn-cost', 'custo $/mês')}
+          ${CONN_FIELD('conn-expires', 'expira (YYYY-MM-DD)')}
+          <select id="conn-billing" style="background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 10px;font-size:12px;color:var(--ink);outline:none">
+            <option value="subscription">assinatura</option><option value="paygo">paygo</option>
+            <option value="free">grátis</option><option value="unknown">desconhecido</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          ${CONN_FIELD('conn-notes', 'notas')}
+          <button onclick="createPMConnection('${esc(slug)}')" class="btn-primary" style="font-size:12px;white-space:nowrap">Salvar</button>
+          <button onclick="togglePMConnForm()" class="btn-secondary" style="font-size:12px">Cancelar</button>
+        </div>
+      </div>
+      <div id="pm-conn-edit" style="display:none;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px;margin-bottom:10px"></div>
+      <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);overflow:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:760px">${rows}</table>
+      </div>`;
+  }
+
+  function scanPMConnections(slug){
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/connections/scan', {method: 'POST'})
+      .then(r => r.json()).then(() => loadPMConnections(slug)).catch(() => {});
+  }
+
+  function togglePMConnForm(){
+    const f = document.getElementById('pm-conn-form');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function createPMConnection(slug){
+    const body = {
+      project_slug: slug,
+      name: document.getElementById('conn-name').value.trim(),
+      provider: document.getElementById('conn-provider').value.trim(),
+      billing_type: document.getElementById('conn-billing').value,
+      cost_usd_month: document.getElementById('conn-cost').value || null,
+      expires_at: document.getElementById('conn-expires').value.trim(),
+      notes: document.getElementById('conn-notes').value.trim()
+    };
+    if(!body.name) return;
+    fetch('/api/pm/connections', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+      .then(r => r.json()).then(() => { togglePMConnForm(); loadPMConnections(slug); }).catch(() => {});
+  }
+
+  function editPMConnection(cid){
+    const c = (S.connections || []).find(x => x.id === cid);
+    if(!c) return;
+    const ed = document.getElementById('pm-conn-edit');
+    ed.style.display = 'block';
+    ed.innerHTML = `
+      <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px">✏️ ${esc(c.name)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <select id="edit-billing" style="background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 10px;font-size:12px;color:var(--ink);outline:none">
+          ${['subscription','paygo','free','unknown'].map(t => `<option value="${t}" ${c.billing_type === t ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+        ${CONN_FIELD('edit-cost', 'custo $/mês', '100%').replace('>', ` value="${esc(c.cost_usd_month != null ? c.cost_usd_month : '')}">`)}
+        ${CONN_FIELD('edit-expires', 'expira (YYYY-MM-DD)', '100%').replace('>', ` value="${esc(c.expires_at || '')}">`)}
+      </div>
+      <div style="display:flex;gap:8px">
+        ${CONN_FIELD('edit-status', 'status (active|unused|expired|revoked)', '100%').replace('>', ` value="${esc(c.status || 'active')}">`)}
+        ${CONN_FIELD('edit-last', 'último uso (YYYY-MM-DD HH:MM:SS)', '100%').replace('>', ` value="${esc(c.last_used_at || '')}">`)}
+        <button onclick="savePMConnection('${esc(cid)}')" class="btn-primary" style="font-size:12px;white-space:nowrap">Salvar</button>
+        <button onclick="cancelPMConnEdit()" class="btn-secondary" style="font-size:12px">Cancelar</button>
+      </div>`;
+  }
+
+  function savePMConnection(cid){
+    const body = {
+      billing_type: document.getElementById('edit-billing').value,
+      cost_usd_month: document.getElementById('edit-cost').value || null,
+      expires_at: document.getElementById('edit-expires').value.trim(),
+      status: document.getElementById('edit-status').value.trim(),
+      last_used_at: document.getElementById('edit-last').value.trim()
+    };
+    fetch('/api/pm/connections/' + encodeURIComponent(cid), {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+      .then(r => r.json()).then(() => { cancelPMConnEdit(); loadPMConnections(S.selected); }).catch(() => {});
+  }
+
+  function cancelPMConnEdit(){
+    document.getElementById('pm-conn-edit').style.display = 'none';
+  }
+
   // ── Presença em tempo real (polling 10s) ───────────────────────────
   function loadPresenceLoop(){
     if(S.timer) return;
@@ -293,5 +436,12 @@
   window.loadPresenceLoop = loadPresenceLoop;
   window.loadPMBoardsPresence = loadPMBoardsPresence;
   window.clearPMPolling = clearPMPolling;
+  window.loadPMConnections = loadPMConnections;
+  window.scanPMConnections = scanPMConnections;
+  window.togglePMConnForm = togglePMConnForm;
+  window.createPMConnection = createPMConnection;
+  window.editPMConnection = editPMConnection;
+  window.savePMConnection = savePMConnection;
+  window.cancelPMConnEdit = cancelPMConnEdit;
   window.PMState = S;
 })();

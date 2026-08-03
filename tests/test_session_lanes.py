@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "web"))
 
 os.environ["PROMETHEUS_DB"] = "/tmp/test-lanes.db"
+os.environ["PROMETHEUS_PROJECTS_ROOT"] = str(Path.home() / "Projetos")  # imune à poluição de env de outros testes
 if os.path.exists("/tmp/test-lanes.db"):
     os.remove("/tmp/test-lanes.db")
 

@@ -9,7 +9,9 @@ Pipeline L0→L3 · Web UI 5 abas + editor · RAG multimodal + OCR · Notes · O
 
 ## v0.2 — Multi-agente & API
 - [x] **Fase A0 — identidade/sessões** (executada 03/08, branch `feat/pm-projetos-a0`): lanes `sess:*`/`proj:*`/`agent:*`, envelope de contexto, idempotência `client_event_id`, Project Resolver v1, `/api/pm/*` (sessions/events/projects/report/presence), tabelas sidecar `prometheus_*` — ver `docs/PLAN_FASE_A0_EXECUCAO.md`
+- [x] **Fase A — aba Projetos na UI** (executada 03/08): botão `🗂️ Projetos`, `#projects-view`, `web/static/projects.js` (boards sidebar, kanban read-only, timeline, progresso, presença polling 10s, drawer de detalhes), i18n EN/PT/ES/ZH, `GET /api/pm/projects/<slug>/events`. 36 testes verdes. Produção sincronizada.
 - [ ] **Aba Projetos** (kanban + timeline + barra de progresso + presença de agentes em tempo real) — `docs/PLAN_PROJETOS_MULTI_SESSAO.md`
+- [x] **Fase A2 — Conexões & Custos** (executada 03/08): scan read-only do `.env` (só fingerprint SHA-256, nunca valor), exclusão de `~/Projetos/web`, alertas "pago e sem uso"/"expirando", chave compartilhada entre projetos, resumo financeiro global, endpoints `/api/pm/*/connections*` + `connections/summary`, curadoria na UI. 41 testes verdes. Produção sincronizada.
 - [ ] **Conexões & Custos por projeto** (Fase A2): chaves mascaradas, MCPs, assinaturas, alertas "pago e sem uso"/"expirando", resumo financeiro global
 - [ ] **Stack & Runtime por projeto** (Fase A3): barra % linguagens estilo GitHub, frameworks, DBs, containers, git ("não versionado" incluso)
 - [ ] **Multi-sessão/multi-harness**: lanes `sess:*`/`proj:*`/`agent:*` (futuro `team:*`) + envelope de contexto + idempotência por `client_event_id` — Fase A0

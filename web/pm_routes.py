@@ -93,6 +93,72 @@ def pm_project_events(slug):
         return jsonify({"error": str(e)[:200], "events": []})
 
 
+@pm_bp.get("/projects/<slug>/connections")
+def pm_connections_list(slug):
+    from connections_registry import list_connections, alerts_for
+    try:
+        return jsonify({"connections": list_connections(slug), "alerts": alerts_for(slug)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "connections": [], "alerts": []})
+
+
+@pm_bp.post("/projects/<slug>/connections/scan")
+def pm_connections_scan(slug):
+    from connections_registry import scan_project
+    try:
+        return jsonify(scan_project(slug))
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.post("/connections")
+def pm_connections_create():
+    b = _body()
+    slug = (b.get("project_slug") or "").strip()
+    name = (b.get("name") or "").strip()
+    if not slug or not name:
+        return jsonify({"error": "project_slug e name obrigatorios"}), 400
+    from connections_registry import add_connection
+    from prometheus_db import get_conn
+    con = get_conn()
+    try:
+        exists = con.execute("SELECT 1 FROM prometheus_projects WHERE slug = ?", (slug,)).fetchone()
+    finally:
+        con.close()
+    if not exists:
+        return jsonify({"error": "projeto inexistente — registre um evento primeiro"}), 400
+    try:
+        res = add_connection(slug, name=name, provider=b.get("provider", ""),
+                             kind=b.get("kind", "api_key"), env_var=b.get("env_var", ""),
+                             billing_type=b.get("billing_type", "unknown"),
+                             cost_usd_month=b.get("cost_usd_month"),
+                             expires_at=b.get("expires_at", ""), notes=b.get("notes", ""))
+        return jsonify(res), 201
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.put("/connections/<cid>")
+def pm_connections_update(cid):
+    from connections_registry import update_connection
+    try:
+        ok = update_connection(cid, _body())
+        if not ok:
+            return jsonify({"error": "nada a atualizar ou id inexistente"}), 404
+        return jsonify({"id": cid, "updated": True})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.get("/connections/summary")
+def pm_connections_summary():
+    from connections_registry import summary
+    try:
+        return jsonify(summary())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @pm_bp.get("/presence")
 def pm_presence():
     project = request.args.get("project", "") or None
