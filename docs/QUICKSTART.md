@@ -32,7 +32,7 @@ systemctl --user restart prometheus-web
 
 ### Web UI
 
-Abra http://localhost:8777 — 6 abas:
+Abra http://localhost:8777 — 7 abas:
 
 | Aba | O que faz |
 |---|---|
@@ -41,6 +41,8 @@ Abra http://localhost:8777 — 6 abas:
 | 📐 Canvas | Diagrama Mermaid do fluxo do agente (clique nos nós) |
 | 📄 RAG | Upload de documentos + busca semântica |
 | 📝 Notes | Importar URLs, buscar e visualizar notas |
+| 🧩 Skills | Registro de skills (global) + conteúdo |
+| 🗂️ Projetos | Painel por projeto: kanban, timeline, progresso, presença de agentes, Stack & Runtime, Conexões & Custos, Skills do projeto |
 | ✏️ Editor | Clique em uma memória → Editar (modal) |
 
 ### Pipeline (automático via cron)

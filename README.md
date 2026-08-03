@@ -51,11 +51,16 @@ literally **gets smarter with every cycle**, with zero human intervention.
 - 📐 **Mermaid Canvas** — auto-generated agent state diagram, zoom, click → offloaded content
 - 📄 **Multimodal local RAG** — upload PDF, TXT, MD, DOCX, PNG, JPG with automatic OCR (Tesseract), **vector search via sqlite-vec KNN (vec0)** over fastembed 384d float32
 - 📝 **Notes** — URL import (GitHub, X/Twitter, websites) with sanitization and custom Markdown renderer
-- ✏️ **Inline Editor** — edit and delete memories directly in the UI (5 tabs + editor modal)
+- ✏️ **Inline Editor** — edit and delete memories directly in the UI (7 tabs + editor modal)
 - 🗄️ **Storage layer** — SQLite by default (WAL), PostgreSQL-ready interface (`DATABASE_URL`) landing in v0.2
 - 💾 **Log offloading** — large tool outputs become refs (up to 61% token reduction)
 - ⚡ **Live resource monitor** — real-time GPU/RAM/disk bars + process usage in the Timeline sidebar (updates every 3s)
 - 🧠 **Skill generation** — detects recurring patterns in scenes and generates reusable skills
+- 🗂️ **Projects tab (v0.2)** — per-project operational dashboard: kanban, timeline, progress bar and **real-time agent presence** (active/idle/stale via heartbeat), driven by lanes `sess:*`/`proj:*`/`agent:*` and `/api/pm/*` (idempotent `client_event_id`, Project Resolver with confidence)
+- 🔑 **Connections & Costs (v0.2)** — per-project API keys/MCPs/subscriptions: read-only `.env` scan (SHA-256 fingerprint, **values never stored/exposed**), "paid but unused" and "expiring" alerts, shared-key detection, global monthly cost summary
+- 🧱 **Stack & Runtime (v0.2)** — GitHub-style language bar (byte-counted, docs/config excluded), frameworks (monorepo-aware), databases (compose/DATABASE_URL), containers and git (branch/commits/dirty or "not versioned")
+- 🧩 **Project skills (v0.2)** — Skill Builder detects patterns in project events → **draft** with evidence → human approval → `active` → promotion candidate to global
+- 🧬 **Mem0 V3 patterns (v0.2)** — single-pass LLM extraction with temporal grounding ("today/yesterday" → absolute dates), SHA-256 dedup scoped per channel, entity linking and recall threshold
 - 🎨 Dark mode, responsive, zero build step (no node_modules)
 
 ## Architecture
@@ -63,7 +68,7 @@ literally **gets smarter with every cycle**, with zero human intervention.
 ```
 ┌─────────────────────────────────────────────────────┐
 │              Prometheus Web UI (:8777)               │
-│  Timeline │ Graph │ Canvas │ Documents │ Notes │ ✏️  │
+│  Timeline │ Graph │ Canvas │ Documents │ Notes │ Skills │ Projects │ ✏️  │
 └─────────────────────────────────────────────────────┘
                           │
           ┌───────────────┼───────────────┐
@@ -176,9 +181,11 @@ All options are environment variables — see [.env.example](.env.example):
 
 ## Screenshots
 
-| Timeline | Graph | Canvas | RAG | Notes |
-|---|---|---|---|---|
-| ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Graph](docs/SCREENSHOTS/graph.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) |
+| Timeline | Graph | Canvas | RAG | Notes | Projects* |
+|---|---|---|---|---|---|
+| ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Graph](docs/SCREENSHOTS/graph.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) | *(pending local capture)* |
+
+\* `docs/SCREENSHOTS/projetos.png` — capture locally and add in the next pass (browser screenshot tool).
 
 ## API (REST)
 
@@ -203,8 +210,20 @@ All options are environment variables — see [.env.example](.env.example):
 | `/api/notes/import` | POST | Import note from URL (SSRF-guarded) |
 | `/api/notes/<path>` | GET/PUT/DELETE | Note CRUD |
 | `/api/notes/search` | POST | Full-text note search |
+| `/api/memory/remember` | POST | Store memory (accepts `infer` for LLM extraction + `project_slug`) |
+| `/api/memory/recall` | POST | Recall (accepts `threshold` to filter low scores) |
+| `/api/pm/sessions/start` / `heartbeat` / `close` | POST | Agent session lifecycle (presence) |
+| `/api/pm/events` | POST | Canonical project event (idempotent via `client_event_id`) |
+| `/api/pm/projects` | GET | Project boards (progress, active sessions) |
+| `/api/pm/projects/<slug>/report` / `events` / `skills` | GET | Project report / events / skills |
+| `/api/pm/projects/<slug>/stack` / `stack/scan` | GET/POST | Tech profile (languages, frameworks, DBs, git, containers) |
+| `/api/pm/projects/<slug>/connections` / `connections/scan` | GET/POST | Connections (masked keys) + re-scan `.env` |
+| `/api/pm/connections` | POST | Manual connection (billing/cost/expiry) |
+| `/api/pm/connections/summary` | GET | Global monthly cost + unused/expiring alerts |
+| `/api/pm/skills/<id>/approve` | POST | Human approval: draft → active |
+| `/api/pm/entities` | GET | Extracted entities (mention counts) |
 
-> **Note:** memory *writes* from agents happen via the Mnemosyne CLI/MCP (shared store). A dedicated `POST /api/memory` REST endpoint is planned for v0.2.
+> **Note:** memory *writes* from agents also flow via the Mnemosyne CLI/MCP (shared store). `POST /api/memory/remember` is available since v0.2 with optional `infer=true` for Mem0-style extraction + dedup (falls back to raw storage if the LLM is unavailable).
 
 ## Security
 

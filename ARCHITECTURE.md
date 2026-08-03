@@ -43,12 +43,26 @@ via CDN, Alpine.js, HTMX, G6.js (grafo), Mermaid.js (canvas).
 
 | Arquivo | Função |
 |---|---|
-| `app.py` | Rotas principais: Timeline, Grafo, Canvas, Search, Stats, Memory detail |
+| `app.py` | Rotas principais: Timeline, Grafo, Canvas, Search, Stats, Memory detail, `/api/memory/remember|recall` (infer/threshold) |
+| `memory.py` | Camada multi-agente + lanes (`sess:*`/`proj:*`/`agent:*`), `remember_inferred` (extração+dedup), `apply_threshold` |
+| `pm_routes.py` | Blueprint `/api/pm`: sessões, eventos (idempotente), projetos, presença, stack, conexões, skills, entities |
+| `projects_registry.py` | Project Resolver v1 + ingest idempotente (`client_event_id`) + relatório materializado |
+| `session_registry.py` | Sessões/heartbeat + presença (active/idle/stale) + lanes |
+| `connections_registry.py` | Scan `.env` read-only (fingerprint), alertas de custo, summary |
+| `tech_profile.py` | Stack & Runtime: linguagens % (bytes), frameworks, DBs, containers, git |
+| `skills_builder.py` | Skills por projeto: padrão → draft → aprovação humana → active → promoção |
+| `extractor.py` | Extração LLM single-pass (Mem0 V3) + grounding temporal |
+| `dedup.py` | Dedup SHA-256 scoped por channel |
+| `entity_store.py` | Entidades + linking memória↔entidade |
+| `prometheus_db.py` | Schema sidecar `prometheus_*` (WAL) |
 | `rag_engine.py` | Engine RAG: chunking (langchain), embeddings (fastembed, 384d multilíngue), OCR (PyMuPDF + Tesseract) |
 | `rag_routes.py` | Blueprint `/api/rag`: upload, busca, coleções, documentos |
 | `notes_routes.py` | Blueprint `/api/notes`: import por URL, sanitização, CRUD, busca |
 | `editor_routes.py` | Blueprint `/api/memory`: update/delete de memórias |
-| `templates/index.html` | SPA com 5 abas + editor modal |
+| `templates/index.html` | SPA com 7 abas + editor modal |
+| `static/projects.js` | Aba Projetos: boards, kanban, timeline, presença, stack, conexões, skills |
+
+**Lanes de memória (v0.2):** `sess:<harness>:<session_id>` (efêmera) · `proj:<slug>` (canônica) · `agent:<id>` — isolamento por projeto/sessão/harness sem vazar contexto entre projetos simultâneos. Tabelas derivadas em sidecar `prometheus_*` (nunca ALTER no upstream Mnemosyne).
 
 **Comunicação com o Mnemosyne:** a UI lê o banco SQLite diretamente
 (detalhes de memória) e usa o CLI `mnemosyne` via subprocess para

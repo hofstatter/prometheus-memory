@@ -11,7 +11,7 @@
 | Hierarquia | Working + Episodic | Flat (Wing→Room→Drawer) | L0→L3 + Canvas | **L0→L3 + Canvas + Persona** |
 | Persona/Skills | Persona facts | Não tem | Persona + Skill gen | **Persona + Skill gen + auto-memory** |
 | RAG | — | ChromaDB | — | **sqlite-vec + OCR multimodal** |
-| Web UI | — | — | — | **6 abas interativas** |
+| Web UI | — | — | — | **7 abas interativas** |
 | Stack | Python, SQLite | Python, ChromaDB | Node.js, TypeScript | **Python, SQLite, Flask** |
 | Licença | MIT | MIT | MIT | **MIT** |
 

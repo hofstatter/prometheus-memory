@@ -51,10 +51,15 @@ literalmente **fica mais inteligente a cada ciclo**, sem intervenção humana.
 - 📐 **Mermaid Canvas** — diagrama de estado do agente gerado automaticamente, zoom, clique → conteúdo offloaded
 - 📄 **RAG local multimodal** — upload de PDF, TXT, MD, DOCX, PNG, JPG com OCR automático (Tesseract), busca vetorial
 - 📝 **Notes** — importação por URL (GitHub, X/Twitter, sites) com sanitização e renderizador Markdown próprio
-- ✏️ **Editor inline** — edição e exclusão de memórias direto na UI
+- ✏️ **Editor inline** — edição e exclusão de memórias direto na UI (7 abas + editor modal)
 - 💾 **Offloading de logs** — outputs grandes de ferramentas viram refs (até 61% de redução de tokens)
 - ⚡ **Monitor de recursos ao vivo** — barras de GPU/RAM/HD em tempo real + consumo do processo na sidebar da Timeline (atualiza a cada 3s)
 - 🧠 **Skill generation** — detecta padrões recorrentes nas cenas e gera skills reutilizáveis
+- 🗂️ **Aba Projetos (v0.2)** — painel operacional por projeto: kanban, timeline, barra de progresso e **presença de agentes em tempo real** (active/idle/stale via heartbeat), com lanes `sess:*`/`proj:*`/`agent:*` e `/api/pm/*` (idempotência por `client_event_id`, Project Resolver com confidence)
+- 🔑 **Conexões & Custos (v0.2)** — chaves API/MCPs/assinaturas por projeto: scan read-only do `.env` (fingerprint SHA-256, **valor nunca armazenado/exposto**), alertas "pago e sem uso"/"expirando", chave compartilhada, resumo de custo mensal global
+- 🧱 **Stack & Runtime (v0.2)** — barra de linguagens estilo GitHub (por bytes, docs/config separados), frameworks (monorepo-aware), bancos (compose/DATABASE_URL), containers e git (branch/commits/dirty ou "não versionado")
+- 🧩 **Skills por projeto (v0.2)** — Skill Builder detecta padrões nos eventos → **draft** com evidências → aprovação humana → `active` → candidata a global
+- 🧬 **Padrões Mem0 V3 (v0.2)** — extração LLM single-pass com grounding temporal ("hoje/ontem" → datas absolutas), dedup SHA-256 scoped por channel, linking de entidades e threshold no recall
 - 🎨 Dark mode, responsivo, zero build step (sem node_modules)
 
 ## Arquitetura
@@ -62,7 +67,7 @@ literalmente **fica mais inteligente a cada ciclo**, sem intervenção humana.
 ```
 ┌─────────────────────────────────────────────────────┐
 │              Prometheus Web UI (:8777)               │
-│  Timeline │ Grafo │ Canvas │ Documents │ Notes │ ✏️  │
+│  Timeline │ Grafo │ Canvas │ Documents │ Notes │ Skills │ Projetos │ ✏️  │
 └─────────────────────────────────────────────────────┘
                           │
           ┌───────────────┼───────────────┐
