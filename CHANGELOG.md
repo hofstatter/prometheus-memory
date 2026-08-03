@@ -2,6 +2,16 @@
 
 ## [0.2.0-dev] — 2026-08-03
 
+### Implementado — Fase A3 (Stack & Runtime)
+
+- 🧱 **`web/tech_profile.py`** (novo): análise por **bytes** estilo GitHub linguist (exclui node_modules/.next/dist/__pycache__/volumes; docs e config contados separados do % de código); **frameworks monorepo-aware** (package.json/requirements.txt/pyproject.toml na raiz + subdirs de 1º nível); **DBs** de docker-compose + `DATABASE_URL`; **containers** via `docker ps` (timeout 6s, falha silenciosa); **git** read-only (branch/remote/5 commits/dirty ou `tracked:false` → badge "não versionado").
+- 🗄️ Tabela `prometheus_tech_profile` (cache) + upsert idempotente + `scan_duration_ms`.
+- 🌐 Endpoints: `GET /api/pm/projects/<slug>/stack` (cache) · `POST .../stack/scan` (re-análise) · `GET .../git` · `GET .../runtime`.
+- 🖥️ **UI**: seção "🧱 Stack & Runtime" — barra de linguagens colorida (estilo GitHub) + legenda, chips de frameworks/DBs, bloco de containers (nome/status/portas), bloco git (branch, remote, dirty, commits ou "⚠ Não versionado"); botões via event delegation `data-pm-action` (fix Inspetor — sem slug no onclick).
+- 🔍 **Revisão Inspetor: APROVADO** (45 testes) — 3 MENOR corrigidos: delegação de clique (data-slug), código morto (`void c`), `_project_dir` com `.resolve()` + containment.
+- ✅ **Testes**: `tests/test_tech_profile.py` S1-S5 — **45 passed, 1 skip** (git no CI). Smoke real EVSCAR: TypeScript 90.9% · Next 16/React 19/Prisma/Tailwind + FastAPI · PostgreSQL/Redis/Meilisearch/MinIO · 5 containers · git "não versionado".
+- 🚀 **Produção sincronizada** (`tech_profile.py`, `pm_routes.py`, `prometheus_db.py`, `projects.js`, `i18n.js`) + `prometheus-web` reiniciado (health 200).
+
 ### Implementado — Fase A2 (Conexões & Custos)
 
 - 🔑 **`web/connections_registry.py`** (novo): scan read-only do `.env` (só NOMES + fingerprint SHA-256 de 16 hex — **valor nunca armazenado/exposto**); exclusão automática de `~/Projetos/web` (produção); detecção de **chave compartilhada** entre projetos (mesmo fingerprint); alertas **"pago e sem uso"** (>30d) e **"expirando"** (<30d); resumo financeiro global (custo/mês, unused, expiring).

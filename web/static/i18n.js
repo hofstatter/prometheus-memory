@@ -58,6 +58,18 @@
     'paygo': {en:'pay-as-you-go', es:'pago por uso', zh:'按量付费'},
     'grátis': {en:'free', es:'gratis', zh:'免费'},
     'desconhecido': {en:'unknown', es:'desconocido', zh:'未知'},
+    // stack & runtime (Fase A3)
+    '🧱 Stack & Runtime': {en:'🧱 Stack & Runtime', es:'🧱 Stack y Runtime', zh:'🧱 技术栈与运行时'},
+    'Analisar stack': {en:'Analyze stack', es:'Analizar stack', zh:'分析技术栈'},
+    'Re-scan': {en:'Re-scan', es:'Re-escanear', zh:'重新扫描'},
+    'carregando stack...': {en:'loading stack...', es:'cargando stack...', zh:'正在加载技术栈...'},
+    'Frameworks': {en:'Frameworks', es:'Frameworks', zh:'框架'},
+    'Bancos de dados': {en:'Databases', es:'Bases de datos', zh:'数据库'},
+    'Containers (runtime)': {en:'Containers (runtime)', es:'Contenedores (runtime)', zh:'容器（运行时）'},
+    'Git': {en:'Git', es:'Git', zh:'Git'},
+    'sem código detectado': {en:'no code detected', es:'sin código detectado', zh:'未检测到代码'},
+    'nenhum container detectado': {en:'no containers detected', es:'sin contenedores detectados', zh:'未检测到容器'},
+    'Não versionado (sem repo git local)': {en:'Not versioned (no local git repo)', es:'No versionado (sin repo git local)', zh:'未版本化（无本地 git 仓库）'},
     // sidebar
     '📂 Projetos': {en:'📂 Projects', es:'📂 Proyectos', zh:'📂 项目'},
     '📁 Coleções': {en:'📁 Collections', es:'📁 Colecciones', zh:'📁 集合'},
