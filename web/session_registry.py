@@ -81,6 +81,12 @@ def start_session(envelope: dict) -> dict:
         ctx = recall_lane(f"proj:{res['slug']}", "decisao implementacao", top_k=3)
     except Exception:
         pass
+    # Presença/relatório: sessão nova muda active_sessions — recalcula o report
+    try:
+        from projects_registry import refresh_report
+        refresh_report(res["slug"])
+    except Exception:
+        pass
     return {"session_key": sk, "project_slug": res["slug"], "confidence": res["confidence"],
             "needs_review": res["needs_review"], "context": ctx}
 

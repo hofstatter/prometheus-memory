@@ -6,7 +6,8 @@
 
 - 📚 **Docs atualizados**: `README.md` EN (features v0.2, diagrama 7 abas, API REST expandida, screenshots) + espelho `docs/lang/README.pt-BR.md` + `docs/lang/README.zh-CN.md` + resumo `docs/lang/README.es.md` · `docs/QUICKSTART.md` (7 abas) · `ARCHITECTURE.md` (módulos novos + lanes) · `COMPARISON.md` (7 abas).
 - 🎨 `docs/DESIGN_PROJECTS.md` (novo) — design tokens/read do painel Projetos (super-designer).
-- 📸 `docs/SCREENSHOTS/projetos.png` pendente (captura local no próximo passe).
+- 📸 `docs/SCREENSHOTS/projetos.png` capturado (varredura Playwright 03/08).
+- 🐛 **Fix (varredura visual)**: `start_session` agora recalcula o relatório do projeto → `active_sessions`/presença no board corretos (era 0 com sessão ativa).
 - 🚀 Release: merge `feat/pm-projetos-a0` → `main` + tag `v0.2.0-projetos` + push GitHub (chave nova).
 
 ### Implementado — Fase C (Mem0 parity essencial)
