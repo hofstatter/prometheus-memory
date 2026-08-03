@@ -14,7 +14,8 @@ IDLE_MAX_S = 300
 
 
 def now_iso() -> str:
-    return datetime.now().isoformat()
+    # Formato consistente p/ ordenação lexicográfica (space + microssegundos)
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 def session_key(harness: str, harness_session_id: str) -> str:
@@ -116,6 +117,17 @@ def close_session(session_key_: str) -> dict:
     return {"session_key": session_key_, "status": "closed", "found": ok}
 
 
+def _parse_ts(ts) -> float:
+    """Parse timestamps sem depender de fromisoformat (compat Python 3.10)."""
+    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(ts, fmt).timestamp()
+        except ValueError:
+            continue
+    return 0.0
+
+
 def presence(project_slug=None) -> list:
     init_schema()
     now = datetime.now().timestamp()
@@ -133,12 +145,7 @@ def presence(project_slug=None) -> list:
 
     out = []
     for r in rows:
-        last = 0.0
-        if r["last_seen_at"]:
-            try:
-                last = datetime.fromisoformat(r["last_seen_at"]).timestamp()
-            except ValueError:
-                last = 0.0
+        last = _parse_ts(r["last_seen_at"]) if r["last_seen_at"] else 0.0
         age = now - last
         st = "active" if age <= ACTIVE_MAX_S else ("idle" if age <= IDLE_MAX_S else "stale")
         out.append({
