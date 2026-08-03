@@ -2,6 +2,17 @@
 
 ## [0.2.0-dev] — 2026-08-03
 
+### Implementado — Fase C (Mem0 parity essencial)
+
+- 🧠 **`web/extractor.py`** (novo): extração LLM **single-pass** estilo Mem0 V3 — prompt com "Recently Extracted"/"Existing Memories" (contexto real do canal, fix Inspetor), **grounding temporal** ("hoje/ontem/amanhã/há N dias/semana passada" → datas absolutas, também pós-extração), parsing JSON tolerante + fallback por linhas, retry 2x; usa `scripts/llm_backend.call_llm` (correção C4 — função real, respeita `LLM_BACKEND`).
+- 🔁 **`web/dedup.py`** (novo): SHA-256 normalizado (128 bits, doc de propósito não-cripto), **scoped por channel** (`prometheus_dedup_hashes`, PK channel+hash), batch `record_hashes` (1 conexão).
+- 🏷️ **`web/entity_store.py`** (novo): entidades heurísticas (capitalizadas) + linkage `prometheus_entities`/`prometheus_memory_entities` (v1; NER LLM em v1.1).
+- 🧬 **`web/memory.py`**: `remember_inferred` (extração → dedup → storage; **fallback degraded** grava raw se LLM off — nunca perde write) + `apply_threshold` (P0c — recall híbrido com threshold). Backward compat `remember`/`recall` intactos.
+- 🌐 **API**: `POST /api/memory/remember` com `infer` + `project_slug` (lane `proj:<slug>`) → resposta `{ids, stored, skipped_duplicates, degraded}`; `POST /api/memory/recall` com `threshold` (top_k inválido → 400); `GET /api/pm/entities` + `GET /api/pm/entities/<name>/memories`.
+- 🔍 **Revisão Inspetor: APROVADO** (57 testes) — M1 corrigido (contexto real no prompt, não hashes), M2 (top_k 400), M3 (batch record_hashes), N1/N2 (doc truncamento + re-grounding pós-extração).
+- ✅ **Testes**: `tests/test_mem0_patterns.py` C1-C7 — **57 passed, 1 skip**. Smoke: infer sem LLM → degraded raw + project_slug; backward compat; threshold 0.9 filtra recall.
+- 🚀 **Produção sincronizada** (7 arquivos) + `prometheus-web` reiniciado (health 200).
+
 ### Implementado — Fase B (Skills por projeto)
 
 - 🧩 **`web/skills_builder.py`** (novo): detecção de padrões em eventos do projeto (MIN_EVIDENCE=3, stoplist de verbos comuns, janela 30d) → **skill DRAFT** com `evidence_json` + confidence escalonada 0.5→0.8; **aprovação humana obrigatória** (`draft→active`, re-aprovação rejeitada); **promoção p/ global** (active com mesmo nome em 2+ projetos); `mark_used` (use_count/last_used_at).

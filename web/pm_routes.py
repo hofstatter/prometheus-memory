@@ -257,6 +257,24 @@ def pm_skills_promotions():
         return jsonify({"error": str(e)[:200], "candidates": []})
 
 
+@pm_bp.get("/entities/<name>/memories")
+def pm_entities_memories(name):
+    from entity_store import memories_for
+    try:
+        return jsonify({"entity": name, "memory_ids": memories_for(name)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "memory_ids": []})
+
+
+@pm_bp.get("/entities")
+def pm_entities_list():
+    from entity_store import list_entities
+    try:
+        return jsonify({"entities": list_entities(limit=int(request.args.get("limit", 100)))})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "entities": []})
+
+
 @pm_bp.get("/presence")
 def pm_presence():
     project = request.args.get("project", "") or None
