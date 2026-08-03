@@ -16,6 +16,11 @@ Pipeline de **memoria jerárquica L0→L3** para agentes de IA — el segundo ce
 - **Offloading de logs** — hasta 61% menos tokens en contexto
 - **Context Briefing** — `GET /api/context/briefing` (~500 tokens para iniciar sesión)
 - **Login por contraseña** — sesión de 30 días, rate limit anti-fuerza-bruta
+- **Pestaña 🗂️ Proyectos (v0.2)** — kanban, timeline, progreso y **presencia de agentes en tiempo real** por proyecto (multi-sesión/multi-harness vía `/api/pm/*`)
+- **Conexiones & Costos (v0.2)** — claves API/MCP/suscripciones por proyecto: scan `.env` solo-lectura con huella SHA-256 (**el valor nunca se expone**), alertas "pagado sin uso"/"por expirar"
+- **Stack & Runtime (v0.2)** — barra de lenguajes estilo GitHub, frameworks, bases de datos, contenedores y git por proyecto
+- **Skills por proyecto (v0.2)** — borrador → aprobación humana → activa → candidata a global
+- **Patrones Mem0 V3 (v0.2)** — extracción LLM single-pass con fechas absolutas + dedup SHA-256 + entidades
 
 ## Instalación (1 comando)
 
