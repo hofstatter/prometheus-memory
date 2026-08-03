@@ -181,11 +181,9 @@ All options are environment variables — see [.env.example](.env.example):
 
 ## Screenshots
 
-| Timeline | Graph | Canvas | RAG | Notes | Projects* |
+| Timeline | Graph | Canvas | RAG | Notes | Projects |
 |---|---|---|---|---|---|
-| ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Graph](docs/SCREENSHOTS/graph.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) | *(pending local capture)* |
-
-\* `docs/SCREENSHOTS/projetos.png` — capture locally and add in the next pass (browser screenshot tool).
+| ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Graph](docs/SCREENSHOTS/graph.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) | ![Projects](docs/SCREENSHOTS/projetos.png) |
 
 ## API (REST)
 
