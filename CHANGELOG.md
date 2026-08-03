@@ -2,6 +2,13 @@
 
 ## [0.2.0-dev] — 2026-08-03
 
+### Ativado — Mem0 na produção (03/08)
+
+- ⚡ **`LLM_BACKEND=deepseek`** no `.env` da produção (mesma chave `DEEPSEEK_API_KEY`) — a extração Mem0 agora roda de verdade: `infer=true` → **`degraded:false`, fatos extraídos pelo DeepSeek** (smoke: 2 fatos de 1 frase), **dedup por hash funcionando** (repetição → `skipped_duplicates:2`), **entidades gravadas**.
+- 🐛 **Fix deploy**: `web/extractor.py` resolve o diretório `scripts/` em 2 candidatos (`parent/scripts` p/ produção `~/Projetos/web/scripts` + `parent.parent/scripts` p/ repo) — antes a produção importava `~/Projetos/scripts` (inexistente) e degradava sempre.
+- 🔧 `scripts/llm_backend.py`: modelo parametrizado via `DEEPSEEK_MODEL` (default `deepseek-chat`) — permite apontar a V4 Flash por extenso sem mexer em código.
+- ⚠️ Entidades v1 são heurísticas (ex.: "Mini" em vez de "MiniMax") — NER via LLM fica para v1.1.
+
 ### Implementado — Fase D (docs 4 idiomas + release)
 
 - 📚 **Docs atualizados**: `README.md` EN (features v0.2, diagrama 7 abas, API REST expandida, screenshots) + espelho `docs/lang/README.pt-BR.md` + `docs/lang/README.zh-CN.md` + resumo `docs/lang/README.es.md` · `docs/QUICKSTART.md` (7 abas) · `ARCHITECTURE.md` (módulos novos + lanes) · `COMPARISON.md` (7 abas).
