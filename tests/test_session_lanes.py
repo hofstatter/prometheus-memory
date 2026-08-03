@@ -126,6 +126,18 @@ def test_t6_backward_compat():
     assert "segredo do atlas" in r
 
 
+def test_t9_list_events():
+    """list_events alimenta kanban/timeline: mais recente primeiro, com campos completos."""
+    _reload_all()
+    _ingest("opencode", "h9", "evscar", "plan", "plano antigo", "h9:1")
+    _ingest("opencode", "h9", "evscar", "implementation", "impl nova", "h9:2")
+    evs = projects_registry.list_events("evscar")
+    assert len(evs) >= 2
+    assert evs[0]["title"] == "impl nova", "esperado mais recente primeiro"
+    for e in evs:
+        assert "harness" in e and "status_hint" in e and "created_at" in e
+
+
 def test_t7_report_progress():
     _reload_all()
     _ingest("opencode", "g7", "reportproj", "implementation", "impl 1", "g7:1")

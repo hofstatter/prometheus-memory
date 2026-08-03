@@ -30,7 +30,8 @@ CONFIDENCE_OK = 0.6
 
 
 def now_iso() -> str:
-    return datetime.now().isoformat()
+    # Formato consistente p/ ordenação lexicográfica (space + microssegundos)
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 def slugify(name: str) -> str:
@@ -135,12 +136,12 @@ def ingest_event(envelope: dict, *, client_event_id: str) -> dict:
         now = now_iso()
         con.execute(
             """INSERT INTO prometheus_project_events
-               (id, project_slug, session_key, harness, agent_id, event_type, title, summary, memory_id, status_hint, progress_delta)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+               (id, project_slug, session_key, harness, agent_id, event_type, title, summary, memory_id, status_hint, progress_delta, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (ev_id, slug, session_key, harness, envelope.get("agent_id", ""),
              envelope.get("event_type", "note"), envelope.get("title", ""),
              envelope.get("summary", ""), "", envelope.get("status_hint", ""),
-             float(envelope.get("progress_delta", 0) or 0)),
+             float(envelope.get("progress_delta", 0) or 0), now),
         )
         con.execute(
             "INSERT INTO prometheus_events_ingest (client_event_id, session_key, project_slug, memory_id) "
@@ -233,6 +234,22 @@ def refresh_report(slug: str) -> dict:
     return {"project_slug": slug, "summary": summary, "progress": progress,
             "open_issues": open_issues, "last_decision": last_decision,
             "last_implementation": last_implementation, "active_sessions": active}
+
+
+def list_events(slug: str, limit: int = 100) -> list:
+    """Eventos do projeto, mais recentes primeiro (alimenta kanban/timeline da UI)."""
+    init_schema()
+    con = get_conn()
+    try:
+        rows = con.execute(
+            "SELECT id, project_slug, session_key, harness, agent_id, event_type, title, summary, "
+            "memory_id, status_hint, created_at FROM prometheus_project_events "
+            "WHERE project_slug = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+            (slug, int(limit)),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        con.close()
 
 
 def get_report(slug: str) -> dict | None:

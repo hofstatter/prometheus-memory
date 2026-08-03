@@ -109,6 +109,7 @@
     <button onclick="showRAG()" id="btn-rag" class="btn-inactive">📄 RAG</button>
     <button onclick="showNotes()" id="btn-notes" class="btn-inactive">📝 Notes</button>
     <button onclick="showSkills()" id="btn-skills" class="btn-inactive">🧩 Skills</button>
+    <button onclick="showProjects()" id="btn-projects" class="btn-inactive">🗂️ Projetos</button>
     <button onclick="authAction()" id="btn-token" class="btn-inactive" title="Login">🔑</button>
     <span class="count" id="memory-count">carregando...</span>
   </nav>
@@ -238,6 +239,21 @@
           </div>
           <div id="skill-detail"><div style="color:var(--ink-muted);font-size:13px">👈 Selecione uma skill na lateral para ver o conteúdo</div></div>
         </div>
+      </div>
+      <div id="projects-view" class="hidden" style="display:flex;gap:0;height:calc(100vh - 80px)">
+        <aside id="projects-sidebar" style="width:250px;min-width:250px;background:var(--surface-1);border-right:1px solid var(--hairline);padding:20px 16px;overflow-y:auto">
+          <div style="font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">🗂️ Boards</div>
+          <div id="projects-list" style="margin-bottom:20px"><div style="color:var(--ink-muted);font-size:12px">carregando...</div></div>
+          <div style="font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">📊 Stats</div>
+          <div id="projects-stats" style="color:var(--ink-muted);font-size:12px;line-height:1.8">carregando...</div>
+        </aside>
+        <div style="flex:1;overflow-y:auto;padding:24px;position:relative" id="projects-main">
+          <div id="projects-empty" style="color:var(--ink-muted);font-size:14px;padding:40px 0;text-align:center">👈 Selecione um projeto na lateral para ver o painel completo</div>
+          <div id="projects-detail" style="display:none"></div>
+        </div>
+        <aside id="projects-drawer" style="width:0;min-width:0;overflow:hidden;background:var(--surface-1);border-left:1px solid var(--hairline);transition:width 0.25s var(--ease-out)" aria-hidden="true">
+          <div style="padding:20px 16px" id="projects-drawer-body"></div>
+        </aside>
       </div>
     </div>
   </main>
@@ -511,7 +527,7 @@ function confirmDeleteMemory(){
 function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
 
 // ── View switching ──
-function resetViews(){['memory-list','graph-view','canvas-view','rag-view','notes-view','skills-view'].forEach(id=>document.getElementById(id).style.display='none');['btn-list','btn-graph','btn-canvas','btn-rag','btn-notes','btn-skills'].forEach(id=>document.getElementById(id).className='btn-inactive');document.getElementById('sidebar').style.display='block'}
+function resetViews(){if(window.clearPMPolling)window.clearPMPolling();['memory-list','graph-view','canvas-view','rag-view','notes-view','skills-view','projects-view'].forEach(id=>document.getElementById(id).style.display='none');['btn-list','btn-graph','btn-canvas','btn-rag','btn-notes','btn-skills','btn-projects'].forEach(id=>document.getElementById(id).className='btn-inactive');document.getElementById('sidebar').style.display='block'}
 function showList(){resetViews();currentView='list';document.getElementById('memory-list').style.display='block';document.getElementById('btn-list').className='btn-active';if(graphInstance){try{graphInstance.destroy()}catch(e){}graphInstance=null}renderList()}
 function showGraph(){resetViews();currentView='graph';document.getElementById('graph-view').style.display='block';document.getElementById('graph-view').classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-graph').className='btn-active';
   if(allMemories.length===0){searchMemories()}else{renderGraph()}}
@@ -527,6 +543,7 @@ function showCanvas(){
 }
 function showRAG(){resetViews();currentView='rag';var rv=document.getElementById('rag-view');rv.style.display='flex';rv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-rag').className='btn-active';loadRAGCollections();loadRAGDocs();loadRAGStats()}
 function showSkills(){resetViews();currentView='skills';var sv=document.getElementById('skills-view');sv.style.display='flex';sv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-skills').className='btn-active';loadSkills()}
+function showProjects(){resetViews();currentView='projects';var pv=document.getElementById('projects-view');pv.style.display='flex';pv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-projects').className='btn-active';if(window.loadPMBoards){loadPMBoards();loadPresenceLoop()}}
 var allSkills=[],skillSelected='';
 function loadSkills(){
   var list=document.getElementById('skills-list');
@@ -1069,12 +1086,13 @@ function togglePhysics(){
   }catch(e){}
 }
 
-// Deep-link de abas via hash (#graph, #canvas, #rag, #notes, #skills)
+// Deep-link de abas via hash (#graph, #canvas, #rag, #notes, #skills, #projects)
 (function(){
   const h = location.hash.replace('#','');
-  const map = {graph: showGraph, canvas: showCanvas, rag: showRAG, notes: showNotes, skills: showSkills, timeline: showList};
+  const map = {graph: showGraph, canvas: showCanvas, rag: showRAG, notes: showNotes, skills: showSkills, projects: showProjects, timeline: showList};
   if (map[h]) setTimeout(map[h], 300);
 })();
 </script>
+<script src="/static/projects.js?v=1"></script>
 </body>
 </html>

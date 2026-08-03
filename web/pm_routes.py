@@ -84,6 +84,15 @@ def pm_project_report(slug):
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@pm_bp.get("/projects/<slug>/events")
+def pm_project_events(slug):
+    from projects_registry import list_events
+    try:
+        return jsonify({"events": list_events(slug, limit=int(request.args.get("limit", 100)))})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "events": []})
+
+
 @pm_bp.get("/presence")
 def pm_presence():
     project = request.args.get("project", "") or None
