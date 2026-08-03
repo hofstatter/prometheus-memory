@@ -48,6 +48,16 @@
     'Issues abertas': {en:'Open issues', es:'Problemas abiertos', zh:'未解决问题'},
     'Última decisão': {en:'Last decision', es:'Última decisión', zh:'最后决策'},
     'Última implementação': {en:'Last implementation', es:'Última implementación', zh:'最后实现'},
+    // conexões & custos (Fase A2)
+    '🔑 Conexões & Custos': {en:'🔑 Connections & Costs', es:'🔑 Conexiones y Costos', zh:'🔑 连接与费用'},
+    'carregando conexões...': {en:'loading connections...', es:'cargando conexiones...', zh:'正在加载连接...'},
+    'Re-scan .env': {en:'Re-scan .env', es:'Re-escanear .env', zh:'重新扫描 .env'},
+    'sem uso': {en:'unused', es:'sin uso', zh:'未使用'},
+    'expirando': {en:'expiring', es:'expirando', zh:'即将过期'},
+    'assinatura': {en:'subscription', es:'suscripción', zh:'订阅'},
+    'paygo': {en:'pay-as-you-go', es:'pago por uso', zh:'按量付费'},
+    'grátis': {en:'free', es:'gratis', zh:'免费'},
+    'desconhecido': {en:'unknown', es:'desconocido', zh:'未知'},
     // sidebar
     '📂 Projetos': {en:'📂 Projects', es:'📂 Proyectos', zh:'📂 项目'},
     '📁 Coleções': {en:'📁 Collections', es:'📁 Colecciones', zh:'📁 集合'},

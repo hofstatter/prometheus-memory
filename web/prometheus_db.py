@@ -74,6 +74,27 @@ CREATE TABLE IF NOT EXISTS prometheus_events_ingest (
   processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS prometheus_connections (
+  id TEXT PRIMARY KEY,
+  project_slug TEXT NOT NULL,
+  kind TEXT NOT NULL,          -- api_key | mcp | service | saas
+  name TEXT NOT NULL,
+  provider TEXT,
+  env_var TEXT,
+  fingerprint TEXT,            -- SHA-256 do valor (nunca o valor) — detecta chave compartilhada
+  billing_type TEXT,           -- subscription | paygo | free | unknown
+  cost_usd_month REAL,
+  expires_at TEXT,
+  last_used_at TEXT,
+  status TEXT DEFAULT 'active',-- active | unused | expired | revoked
+  source TEXT DEFAULT 'manual',-- auto-env | auto-mcp | manual
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_pmc_pslug_kind ON prometheus_connections(project_slug, kind);
+CREATE INDEX IF NOT EXISTS idx_pmc_fingerprint ON prometheus_connections(fingerprint);
+
 CREATE TABLE IF NOT EXISTS prometheus_project_reports (
   project_slug TEXT PRIMARY KEY,
   summary TEXT,

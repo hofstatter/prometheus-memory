@@ -2,6 +2,25 @@
 
 ## [0.2.0-dev] — 2026-08-03
 
+### Implementado — Fase A2 (Conexões & Custos)
+
+- 🔑 **`web/connections_registry.py`** (novo): scan read-only do `.env` (só NOMES + fingerprint SHA-256 de 16 hex — **valor nunca armazenado/exposto**); exclusão automática de `~/Projetos/web` (produção); detecção de **chave compartilhada** entre projetos (mesmo fingerprint); alertas **"pago e sem uso"** (>30d) e **"expirando"** (<30d); resumo financeiro global (custo/mês, unused, expiring).
+- 🗄️ Tabela `prometheus_connections` no schema sidecar (kind, fingerprint, billing_type, cost_usd_month, expires_at, last_used_at, status, source).
+- 🌐 Endpoints: `GET/POST /api/pm/projects/<slug>/connections`, `POST .../connections/scan`, `POST /api/pm/connections`, `PUT /api/pm/connections/<id>`, `GET /api/pm/connections/summary`.
+- 🖥️ **UI**: seção "🔑 Conexões & Custos" na aba Projetos — tabela com fingerprint mascarado, badges de billing/alertas, re-scan, formulário de nova conexão e edição de billing (PUT não muta fingerprint/env_var — fix Inspetor).
+- 🔍 **Revisão Inspetor: APROVADO** (41 testes) — 1 MAJOR corrigido (whitelist do PUT sem fingerprint/env_var) + 2 MENOR (esc() no cost; N+1 no summary) + validação de projeto órfão no POST.
+- ✅ **Testes**: `tests/test_connections.py` C1-C5 — **41 testes verdes** (36 + 5). `node --check` OK.
+- 🚀 **Produção sincronizada** (`connections_registry.py`, `pm_routes.py`, `prometheus_db.py`, `projects.js`, `i18n.js`) + `prometheus-web` reiniciado (health 200).
+
+### Implementado — Fase A (aba Projetos na UI)
+
+- 🗂️ **Aba `🗂️ Projetos`** na UI (`web/templates/index.html`): botão no nav, `#projects-view` (sidebar boards + main + drawer), integrada ao `resetViews()`/deep-link `#projects`.
+- 📊 **`web/static/projects.js`** (novo): sidebar de boards com barra de progresso, kanban read-only (Backlog/Em andamento/Concluído + badge BLOQUEADO), timeline horizontal, KPIs, **presença em tempo real** (polling 10s, dots active/idle/stale), drawer de detalhes com memória canônica.
+- 🌐 **i18n** EN/PT/ES/ZH para a nova aba (`web/static/i18n.js`).
+- 📨 **`GET /api/pm/projects/<slug>/events`** (novo) + `list_events()` — alimenta kanban/timeline; timestamps com microssegundos (ordem correta mesmo no mesmo segundo).
+- ✅ **Testes**: `test_t9_list_events` — **36 testes verdes** (35 + 1). `node --check` no projects.js OK.
+- 🚀 **Produção sincronizada** (`~/Projetos/web/`: templates, static, pm_routes, projects_registry, session_registry) + `prometheus-web` reiniciado (health 200, `#projects` e `/static/projects.js` OK).
+
 ### Implementado — Fase A0 (identidade de contexto e sessões)
 
 - 🧩 **Lanes de memória** em `web/memory.py`: `sess:<harness>:<session_id>` (efêmera) · `proj:<slug>` (canônica) · `agent:<id>` (backward compat) — `session_id` por agente corrige a colisão de dedup exato entre agentes no Mnemosyne; API pública `remember`/`recall` preservada.
