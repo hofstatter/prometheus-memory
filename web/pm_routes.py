@@ -202,6 +202,61 @@ def pm_runtime_get(slug):
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@pm_bp.post("/projects/<slug>/skills/suggest")
+def pm_skills_suggest(slug):
+    from skills_builder import suggest_skill
+    try:
+        skill = suggest_skill(slug)
+        if not skill:
+            return jsonify({"project_slug": slug, "suggested": False,
+                            "reason": "sem padrão suficiente (3+ eventos com tema comum)"})
+        return jsonify({**skill, "suggested": True})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.get("/projects/<slug>/skills")
+def pm_skills_list(slug):
+    from skills_builder import list_skills
+    try:
+        return jsonify({"skills": list_skills(slug)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "skills": []})
+
+
+@pm_bp.post("/skills/<sid>/approve")
+def pm_skills_approve(sid):
+    from skills_builder import approve_skill
+    try:
+        res = approve_skill(sid)
+        if not res:
+            return jsonify({"error": "skill inexistente ou não está em draft"}), 404
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.post("/skills/<sid>/mark-used")
+def pm_skills_mark_used(sid):
+    from skills_builder import mark_used
+    try:
+        res = mark_used(sid)
+        if not res or not res.get("used"):
+            return jsonify({"error": "skill inexistente"}), 404
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.get("/skills/promotions")
+def pm_skills_promotions():
+    from skills_builder import promotion_candidates
+    try:
+        return jsonify({"candidates": promotion_candidates()})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "candidates": []})
+
+
 @pm_bp.get("/presence")
 def pm_presence():
     project = request.args.get("project", "") or None

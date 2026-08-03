@@ -70,6 +70,15 @@
     'sem código detectado': {en:'no code detected', es:'sin código detectado', zh:'未检测到代码'},
     'nenhum container detectado': {en:'no containers detected', es:'sin contenedores detectados', zh:'未检测到容器'},
     'Não versionado (sem repo git local)': {en:'Not versioned (no local git repo)', es:'No versionado (sin repo git local)', zh:'未版本化（无本地 git 仓库）'},
+    // skills por projeto (Fase B)
+    '🧩 Skills do projeto': {en:'🧩 Project skills', es:'🧩 Skills del proyecto', zh:'🧩 项目技能'},
+    'Sugerir skill': {en:'Suggest skill', es:'Sugerir skill', zh:'建议技能'},
+    'Aprovar': {en:'Approve', es:'Aprobar', zh:'批准'},
+    'draft': {en:'draft', es:'borrador', zh:'草稿'},
+    'active': {en:'active', es:'activa', zh:'已激活'},
+    'arquivada': {en:'archived', es:'archivada', zh:'已归档'},
+    'Nenhuma skill de projeto ainda — clique em "Sugerir skill"': {en:'No project skills yet — click "Suggest skill"', es:'Aún no hay skills — clic en "Sugerir skill"', zh:'暂无项目技能 — 点击“建议技能”'},
+    'Promoção p/ global:': {en:'Promotion to global:', es:'Promoción a global:', zh:'提升为全局：'},
     // sidebar
     '📂 Projetos': {en:'📂 Projects', es:'📂 Proyectos', zh:'📂 项目'},
     '📁 Coleções': {en:'📁 Collections', es:'📁 Colecciones', zh:'📁 集合'},
