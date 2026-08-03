@@ -14,6 +14,7 @@ BACKEND = os.getenv("LLM_BACKEND", "ollama")
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 
 
 def call_llm(prompt: str, max_tokens: int = 400, temperature: float = 0.3, timeout: int = 45) -> str:
@@ -47,7 +48,7 @@ def _deepseek(prompt: str, max_tokens: int, temperature: float, timeout: int) ->
         r = http.post(
             "https://api.deepseek.com/chat/completions",
             headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
-            json={"model": "deepseek-chat",
+            json={"model": DEEPSEEK_MODEL,
                   "messages": [{"role": "user", "content": prompt}],
                   "max_tokens": max_tokens, "temperature": temperature},
             timeout=timeout,

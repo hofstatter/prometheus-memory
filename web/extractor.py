@@ -10,9 +10,14 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-_SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
+_SCRIPTS_CANDIDATES = [
+    Path(__file__).resolve().parent / "scripts",        # deploy produção (~/Projetos/web/scripts)
+    Path(__file__).resolve().parent.parent / "scripts", # repo (prometheus-memory/scripts)
+]
+for _c in _SCRIPTS_CANDIDATES:
+    if _c.exists():
+        sys.path.insert(0, str(_c))
+        break
 
 from llm_backend import call_llm  # noqa: E402
 
