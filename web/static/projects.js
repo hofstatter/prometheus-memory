@@ -160,6 +160,7 @@
       </div>
 
       <div id="pm-stack" style="margin-bottom:18px"></div>
+      <div id="pm-skills" style="margin-bottom:18px"></div>
       <div id="pm-connections" style="margin-bottom:18px"></div>
 
       <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Kanban</h3>
@@ -170,6 +171,7 @@
         ${renderTimeline(events)}
       </div>`;
   loadPMStack(slug);
+  loadPMSkills(slug);
   loadPMConnections(slug);
   }
 
@@ -186,7 +188,7 @@
   function cardHTML(ev){
     const blocked = ev.status_hint === 'blocked';
     const border = blocked ? '1px solid #ef4444' : '1px solid var(--hairline)';
-    return `<div onclick="openPMDrawer('${esc(ev.id)}')" style="cursor:pointer;background:var(--surface-2);border:${border};border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px;transition:transform .12s var(--ease-out);transform:scale(1)">
+    return `<div class="pm-card" data-eid="${esc(ev.id)}" style="cursor:pointer;background:var(--surface-2);border:${border};border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px;transition:transform .12s var(--ease-out);transform:scale(1)">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px">
         ${typeChip(ev.event_type)}
         ${blocked ? '<span style="font-size:10px;font-weight:700;color:#ef4444">BLOQUEADO</span>' : ''}
@@ -361,6 +363,60 @@
       </div>`;
   }
 
+  // ── Skills do projeto (Fase B) ─────────────────────────────────────
+  function loadPMSkills(slug){
+    const el = document.getElementById('pm-skills');
+    if(!el) return;
+    Promise.all([
+      fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/skills').then(r => r.json()).catch(() => ({skills: []})),
+      fetch('/api/pm/skills/promotions').then(r => r.json()).catch(() => ({candidates: []}))
+    ]).then(([data, prom]) => {
+      renderSkills(el, slug, data.skills || [], prom.candidates || []);
+    });
+  }
+
+  function suggestPMSkill(slug){
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/skills/suggest', {method: 'POST'})
+      .then(r => r.json()).then(() => loadPMSkills(slug)).catch(() => {});
+  }
+
+  function approvePMSkill(sid){
+    fetch('/api/pm/skills/' + encodeURIComponent(sid) + '/approve', {method: 'POST'})
+      .then(r => r.json()).then(() => loadPMSkills(S.selected)).catch(() => {});
+  }
+
+  function renderSkills(el, slug, skills, promotions){
+    const stBadge = (st) => {
+      const map = {draft: ['#eab308', 'draft'], active: ['#22c55e', 'active'], archived: ['#6b7280', 'arquivada']};
+      const [c, l] = map[st] || map.archived;
+      return `<span style="font-size:10px;font-weight:600;color:${c};background:${c}1a;border:1px solid ${c}40;border-radius:999px;padding:2px 8px">${l}</span>`;
+    };
+    const cards = skills.map(s => `
+      <div style="background:var(--surface-2);border:1px solid ${s.status === 'draft' ? '#eab30840' : 'var(--hairline)'};border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--ink)">🧩 ${esc(s.name)}</span>
+          ${stBadge(s.status)}
+        </div>
+        <div style="font-size:11px;color:var(--ink-muted);margin-top:4px">${esc(s.description)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;color:var(--ink-muted)">
+          <span>confiança ${s.confidence != null ? Math.round(s.confidence * 100) : '?'}% · ${s.use_count || 0} uso(s)</span>
+          ${s.status === 'draft' ? `<button data-pm-action="approve-skill" data-sid="${esc(s.id)}" class="btn-primary" style="font-size:11px;padding:3px 10px">Aprovar</button>` : ''}
+        </div>
+      </div>`).join('') || '<div style="color:var(--ink-muted);font-size:12px;padding:6px 0">Nenhuma skill de projeto ainda — clique em "Sugerir skill"</div>';
+    const promos = (promotions || []).map(p =>
+      `<span style="display:inline-block;background:#0ea5e91a;border:1px solid #0ea5e940;border-radius:999px;padding:3px 10px;font-size:11px;color:#0ea5e9;margin:0 4px 4px 0">🏆 ${esc(p.name)} — ${p.n_projects} projetos</span>`).join('') || '';
+
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">🧩 Skills do projeto</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${promos ? `<span style="font-size:11px;color:var(--ink-muted)">Promoção p/ global:</span>` : ''}${promos}
+          <button data-pm-action="suggest-skill" data-slug="${esc(slug)}" class="btn-secondary" style="font-size:11px;padding:5px 10px">Sugerir skill</button>
+        </div>
+      </div>
+      <div>${cards}</div>`;
+  }
+
   // ── Conexões & Custos (Fase A2) ────────────────────────────────────
   function loadPMConnections(slug){
     const el = document.getElementById('pm-connections');
@@ -522,6 +578,8 @@
       });
     }
     document.addEventListener('click', function(e){
+      const card = e.target.closest('.pm-card');
+      if(card && card.dataset.eid){ openPMDrawer(card.dataset.eid); return; }
       const t = e.target.closest('[data-pm-action]');
       if(!t) return;
       const slug = t.getAttribute('data-slug');
@@ -529,6 +587,8 @@
       if(action === 'scan-stack') scanPMStack(slug);
       else if(action === 'scan-conn') scanPMConnections(slug);
       else if(action === 'create-conn') createPMConnection(slug);
+      else if(action === 'suggest-skill') suggestPMSkill(slug);
+      else if(action === 'approve-skill') approvePMSkill(t.getAttribute('data-sid'));
     });
   });
 
@@ -542,6 +602,9 @@
   window.loadPMConnections = loadPMConnections;
   window.loadPMStack = loadPMStack;
   window.scanPMStack = scanPMStack;
+  window.loadPMSkills = loadPMSkills;
+  window.suggestPMSkill = suggestPMSkill;
+  window.approvePMSkill = approvePMSkill;
   window.scanPMConnections = scanPMConnections;
   window.togglePMConnForm = togglePMConnForm;
   window.createPMConnection = createPMConnection;

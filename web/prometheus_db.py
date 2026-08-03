@@ -107,6 +107,27 @@ CREATE TABLE IF NOT EXISTS prometheus_tech_profile (
   scan_duration_ms INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS prometheus_skills (
+  id TEXT PRIMARY KEY,
+  project_slug TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  content TEXT NOT NULL,
+  scope TEXT DEFAULT 'project',   -- project | global
+  status TEXT DEFAULT 'draft',    -- draft | active | archived
+  confidence REAL DEFAULT 0.5,
+  evidence_json TEXT DEFAULT '[]',
+  source TEXT DEFAULT 'builder',  -- builder | manual
+  version INTEGER DEFAULT 1,
+  checksum TEXT DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_used_at TEXT,
+  use_count INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_psk_slug ON prometheus_skills(project_slug, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_psk_uniq ON prometheus_skills(project_slug, name);
+
 CREATE TABLE IF NOT EXISTS prometheus_project_reports (
   project_slug TEXT PRIMARY KEY,
   summary TEXT,

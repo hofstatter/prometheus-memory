@@ -17,6 +17,7 @@ Pipeline L0→L3 · Web UI 5 abas + editor · RAG multimodal + OCR · Notes · O
 - [ ] **Stack & Runtime por projeto** (Fase A3): barra % linguagens estilo GitHub, frameworks, DBs, containers, git ("não versionado" incluso)
 - [ ] **Multi-sessão/multi-harness**: lanes `sess:*`/`proj:*`/`agent:*` (futuro `team:*`) + envelope de contexto + idempotência por `client_event_id` — Fase A0
 - [ ] **MCP de eventos**: `prometheus_session_start/heartbeat/close`, `prometheus_project_event`, `prometheus_project_context` — OpenCode/Claude Code/Codex
+- [x] **Fase B — Skills por projeto** (executada 03/08): `web/skills_builder.py` — detecção de padrões em eventos (MIN_EVIDENCE=3, stoplist de verbos), skill DRAFT com evidências e confidence 0.5-0.8, **aprovação humana obrigatória** (draft→active), promoção p/ global (active em 2+ projetos), mark-used; tabela sidecar `prometheus_skills` (UNIQUE project_slug+name); endpoints `/api/pm/*skills*`. 50 testes. Produção sincronizada.
 - [ ] **Skills por projeto** (`project_slug`, `scope`, `status draft/active`, `evidence_json`) + Skill Builder com aprovação humana — Fase B
 - [ ] **`agent_id`/`session_id`** em todo recall/write (isolamento entre agentes, padrão mem0)
 - [ ] **MCP server** (padrão dominante 2026) + `POST /api/memory` (remember/recall via REST, matar subprocess+regex)

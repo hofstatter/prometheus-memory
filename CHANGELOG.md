@@ -2,6 +2,16 @@
 
 ## [0.2.0-dev] — 2026-08-03
 
+### Implementado — Fase B (Skills por projeto)
+
+- 🧩 **`web/skills_builder.py`** (novo): detecção de padrões em eventos do projeto (MIN_EVIDENCE=3, stoplist de verbos comuns, janela 30d) → **skill DRAFT** com `evidence_json` + confidence escalonada 0.5→0.8; **aprovação humana obrigatória** (`draft→active`, re-aprovação rejeitada); **promoção p/ global** (active com mesmo nome em 2+ projetos); `mark_used` (use_count/last_used_at).
+- 🗄️ Tabela sidecar `prometheus_skills` (id PK, **UNIQUE (project_slug, name)** — idempotência em concorrência; fix Inspetor) — NÃO altera o registry global `skills` (name PK).
+- 🌐 Endpoints: `POST /api/pm/projects/<slug>/skills/suggest` · `GET .../skills` · `POST /api/pm/skills/<id>/approve` · `POST /api/pm/skills/<id>/mark-used` · `GET /api/pm/skills/promotions`.
+- 🖥️ **UI**: seção "🧩 Skills do projeto" — cards draft (amarelo, botão Aprovar) / active (verde), evidências, confiança, candidatas a promoção; botões via `data-pm-action`/`data-sid` + delegação; **fix XSS no cardHTML** (onclick → `data-eid` + delegação).
+- 🔍 **Revisão Inspetor: APROVADO** (50 testes) — 3 correções: UNIQUE INDEX, XSS cardHTML, rota mark-used + import json no topo.
+- ✅ **Testes**: `tests/test_skills_builder.py` B1-B5 — **50 passed, 1 skip**. Smoke: padrão "osm sync" → draft `estacao` (4 evidências) → approve → active.
+- 🚀 **Produção sincronizada** (`skills_builder.py`, `pm_routes.py`, `prometheus_db.py`, `projects.js`, `i18n.js`) + `prometheus-web` reiniciado (health 200).
+
 ### Implementado — Fase A3 (Stack & Runtime)
 
 - 🧱 **`web/tech_profile.py`** (novo): análise por **bytes** estilo GitHub linguist (exclui node_modules/.next/dist/__pycache__/volumes; docs e config contados separados do % de código); **frameworks monorepo-aware** (package.json/requirements.txt/pyproject.toml na raiz + subdirs de 1º nível); **DBs** de docker-compose + `DATABASE_URL`; **containers** via `docker ps` (timeout 6s, falha silenciosa); **git** read-only (branch/remote/5 commits/dirty ou `tracked:false` → badge "não versionado").
