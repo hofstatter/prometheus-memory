@@ -552,6 +552,13 @@ try:
 except Exception as e:
     print(f"[Prometheus] Editor blueprint não registrado: {e}", flush=True)
 
+try:
+    from pm_routes import pm_bp
+    app.register_blueprint(pm_bp)
+    print("[Prometheus] PM blueprint registrado", flush=True)
+except Exception as e:
+    print(f"[Prometheus] PM blueprint não registrado: {e}", flush=True)
+
 # ─── Main ──────────────────────────────────────────
 
 if __name__ == "__main__":
