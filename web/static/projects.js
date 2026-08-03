@@ -159,6 +159,7 @@
         ${kpi('Última implementação', rep ? rep.last_implementation : '')}
       </div>
 
+      <div id="pm-stack" style="margin-bottom:18px"></div>
       <div id="pm-connections" style="margin-bottom:18px"></div>
 
       <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Kanban</h3>
@@ -168,6 +169,7 @@
       <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px;overflow-x:auto">
         ${renderTimeline(events)}
       </div>`;
+  loadPMStack(slug);
   loadPMConnections(slug);
   }
 
@@ -229,7 +231,6 @@
     if(!ev) return;
     const drawer = document.getElementById('projects-drawer');
     const body = document.getElementById('projects-drawer-body');
-    const c = TYPE_COLOR[ev.event_type] || '#94a3b8';
     body.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <span style="font-size:12px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">Detalhes do evento</span>
@@ -258,13 +259,106 @@
         }
       }).catch(()=>{});
     }
-    void c;
   }
 
   function closePMDrawer(){
     const drawer = document.getElementById('projects-drawer');
     drawer.style.width = '0';
     drawer.setAttribute('aria-hidden', 'true');
+  }
+
+  // ── Stack & Runtime (Fase A3) ──────────────────────────────────────
+  const LANG_COLOR = {
+    'Python':'#3572A5','TypeScript':'#3178c6','JavaScript':'#f1e05a','HTML':'#e34c26',
+    'CSS':'#563d7c','SCSS':'#c6538c','Shell':'#89e051','SQL':'#e38c00','Go':'#00ADD8',
+    'Rust':'#dea584','Java':'#b07219','Ruby':'#701516','PHP':'#4F5D95','C':'#555555',
+    'C++':'#f34b7d','Vue':'#41b883','Svelte':'#ff3e00','Astro':'#ff5d01'
+  };
+
+  function loadPMStack(slug){
+    const el = document.getElementById('pm-stack');
+    if(!el) return;
+    el.innerHTML = '<div style="color:var(--ink-muted);font-size:12px">carregando stack...</div>';
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/stack').then(r => {
+      if(r.status === 404) return null;
+      return r.json();
+    }).then(prof => {
+      if(!prof) renderStackEmpty(el, slug);
+      else renderStack(el, prof);
+    }).catch(() => renderStackEmpty(el, slug));
+  }
+
+  function scanPMStack(slug){
+    const el = document.getElementById('pm-stack');
+    el.innerHTML = '<div style="color:var(--ink-muted);font-size:12px">analisando...</div>';
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/stack/scan', {method: 'POST'})
+      .then(r => r.json()).then(prof => renderStack(el, prof)).catch(() => {});
+  }
+
+  function renderStackEmpty(el, slug){
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">🧱 Stack & Runtime</h3>
+        <button data-pm-action="scan-stack" data-slug="${esc(slug)}" class="btn-primary" style="font-size:11px;padding:5px 10px">Analisar stack</button>
+      </div>
+      <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px;color:var(--ink-muted);font-size:13px">
+        Nenhuma análise ainda — clique em "Analisar stack" para detectar linguagens, frameworks, DBs, containers e git.
+      </div>`;
+  }
+
+  function renderStack(el, prof){
+    const langs = prof.languages || [];
+    const totalBars = langs.map(l => `<div style="flex:${l.percent};background:${LANG_COLOR[l.language] || '#94a3b8'}" title="${esc(l.language)} ${l.percent}%"></div>`).join('') || '<div style="flex:1;background:var(--surface-2)"></div>';
+    const legend = langs.map(l => `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-muted);margin:0 10px 4px 0">
+      <span style="width:9px;height:9px;border-radius:2px;background:${LANG_COLOR[l.language] || '#94a3b8'}"></span>${esc(l.language)} ${l.percent}%</span>`).join('') || '<span style="font-size:11px;color:var(--ink-muted)">sem código detectado</span>';
+    const docsKb = Math.round((prof.docs_bytes || 0) / 1024);
+    const cfgKb = Math.round((prof.config_bytes || 0) / 1024);
+    const frameworks = (prof.frameworks || []).map(f => `<span style="display:inline-block;background:var(--surface-2);border:1px solid var(--hairline);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink);margin:0 4px 4px 0">${esc(f.name)}${f.version ? ' <span style="color:var(--ink-muted);font-size:11px">'+esc(f.version)+'</span>' : ''}</span>`).join('') || '<span style="color:var(--ink-muted);font-size:12px">—</span>';
+    const dbs = (prof.databases || []).map(db => `<span style="display:inline-block;background:#0ea5e91a;border:1px solid #0ea5e940;border-radius:999px;padding:3px 10px;font-size:12px;color:#0ea5e9;margin:0 4px 4px 0">🗄 ${esc(db)}</span>`).join('') || '<span style="color:var(--ink-muted);font-size:12px">—</span>';
+    const containers = (prof.containers || []).map(c => `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--hairline);font-size:12px">
+      <span style="color:var(--ink);font-weight:500">🐳 ${esc(c.name)}</span>
+      <span style="color:var(--ink-muted)">${esc(c.status)}</span>
+      <span style="color:var(--ink-muted);font-family:var(--font-mono)">${esc(c.ports)}</span>
+    </div>`).join('') || '<div style="color:var(--ink-muted);font-size:12px;padding:4px 0">nenhum container detectado</div>';
+    const git = prof.git || {};
+    const gitBlock = git.tracked ? `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <span style="background:var(--surface-2);border:1px solid var(--hairline);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink)">🌿 ${esc(git.branch || '?')}</span>
+        ${git.remote ? `<span style="background:var(--surface-2);border:1px solid var(--hairline);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink-muted)">${esc(git.remote)}</span>` : ''}
+        ${git.dirty_count > 0 ? `<span style="background:#eab3081a;border:1px solid #eab30840;border-radius:999px;padding:3px 10px;font-size:12px;color:#eab308;font-weight:600">dirty (${git.dirty_count})</span>` : '<span style="background:#22c55e1a;border:1px solid #22c55e40;border-radius:999px;padding:3px 10px;font-size:12px;color:#22c55e">clean</span>'}
+      </div>
+      <div style="font-size:12px;color:var(--ink-muted);line-height:1.7">${(git.commits || []).map(c => esc(c)).join('<br>')}</div>`
+      : `<div style="background:#ef44441a;border:1px solid #ef444440;color:#ef4444;border-radius:var(--radius-md);padding:8px 12px;font-size:12px;font-weight:600">⚠ Não versionado (sem repo git local)</div>`;
+
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">🧱 Stack & Runtime</h3>
+        <span style="font-size:11px;color:var(--ink-muted)">análise ${prof.scan_duration_ms ? prof.scan_duration_ms + 'ms' : ''}${prof.analyzed_at ? ' · ' + timeAgo(prof.analyzed_at) : ''}</span>
+        <button data-pm-action="scan-stack" data-slug="${esc(prof.project_slug || S.selected)}" class="btn-secondary" style="font-size:11px;padding:5px 10px">Re-scan</button>
+      </div>
+      <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;margin-bottom:8px">${totalBars}</div>
+        <div>${legend}</div>
+        <div style="font-size:11px;color:var(--ink-muted);margin-top:6px">docs: ${docsKb} KB · config: ${cfgKb} KB (fora do % de código)</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px">
+          <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Frameworks</div>
+          <div>${frameworks}</div>
+        </div>
+        <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px">
+          <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Bancos de dados</div>
+          <div>${dbs}</div>
+        </div>
+      </div>
+      <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px">
+        <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Containers (runtime)</div>
+        ${containers}
+      </div>
+      <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px">
+        <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Git</div>
+        ${gitBlock}
+      </div>`;
   }
 
   // ── Conexões & Custos (Fase A2) ────────────────────────────────────
@@ -315,7 +409,7 @@
           <span style="font-size:12px;color:var(--ink-muted)">Total: <b style="color:var(--ink)">${summ.total_cost_usd_month != null ? '$' + Number(summ.total_cost_usd_month).toFixed(2) + '/mês' : '—'}</b></span>
           ${(summ.unused_keys || 0) > 0 ? `<span style="font-size:11px;color:#ef4444;font-weight:600">${summ.unused_keys} sem uso</span>` : ''}
           ${(summ.expiring_keys || 0) > 0 ? `<span style="font-size:11px;color:#eab308;font-weight:600">${summ.expiring_keys} expirando</span>` : ''}
-          <button onclick="scanPMConnections('${esc(slug)}')" class="btn-secondary" style="font-size:11px;padding:5px 10px">Re-scan .env</button>
+          <button data-pm-action="scan-conn" data-slug="${esc(slug)}" class="btn-secondary" style="font-size:11px;padding:5px 10px">Re-scan .env</button>
           <button onclick="togglePMConnForm()" class="btn-primary" style="font-size:11px;padding:5px 10px">➕</button>
         </div>
       </div>
@@ -334,7 +428,7 @@
         </div>
         <div style="display:flex;gap:8px">
           ${CONN_FIELD('conn-notes', 'notas')}
-          <button onclick="createPMConnection('${esc(slug)}')" class="btn-primary" style="font-size:12px;white-space:nowrap">Salvar</button>
+          <button data-pm-action="create-conn" data-slug="${esc(slug)}" class="btn-primary" style="font-size:12px;white-space:nowrap">Salvar</button>
           <button onclick="togglePMConnForm()" class="btn-secondary" style="font-size:12px">Cancelar</button>
         </div>
       </div>
@@ -427,6 +521,15 @@
         if(card && card.dataset.slug) selectPMProject(card.dataset.slug);
       });
     }
+    document.addEventListener('click', function(e){
+      const t = e.target.closest('[data-pm-action]');
+      if(!t) return;
+      const slug = t.getAttribute('data-slug');
+      const action = t.getAttribute('data-pm-action');
+      if(action === 'scan-stack') scanPMStack(slug);
+      else if(action === 'scan-conn') scanPMConnections(slug);
+      else if(action === 'create-conn') createPMConnection(slug);
+    });
   });
 
   window.loadPMBoards = loadPMBoards;
@@ -437,6 +540,8 @@
   window.loadPMBoardsPresence = loadPMBoardsPresence;
   window.clearPMPolling = clearPMPolling;
   window.loadPMConnections = loadPMConnections;
+  window.loadPMStack = loadPMStack;
+  window.scanPMStack = scanPMStack;
   window.scanPMConnections = scanPMConnections;
   window.togglePMConnForm = togglePMConnForm;
   window.createPMConnection = createPMConnection;

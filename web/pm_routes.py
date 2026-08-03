@@ -159,6 +159,49 @@ def pm_connections_summary():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@pm_bp.get("/projects/<slug>/stack")
+def pm_stack_get(slug):
+    from tech_profile import get_profile
+    try:
+        prof = get_profile(slug)
+        if not prof:
+            return jsonify({"error": "sem perfil ainda — POST /stack/scan para analisar"}), 404
+        return jsonify(prof)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.post("/projects/<slug>/stack/scan")
+def pm_stack_scan(slug):
+    from tech_profile import scan_project
+    try:
+        return jsonify(scan_project(slug))
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@pm_bp.get("/projects/<slug>/git")
+def pm_git_get(slug):
+    from tech_profile import get_profile
+    try:
+        prof = get_profile(slug)
+        return jsonify({"git": (prof or {}).get("git", {"tracked": False})})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "git": {"tracked": False}}), 500
+
+
+@pm_bp.get("/projects/<slug>/runtime")
+def pm_runtime_get(slug):
+    from tech_profile import get_profile
+    try:
+        prof = get_profile(slug)
+        if not prof:
+            return jsonify({"error": "sem perfil ainda — POST /stack/scan"}), 404
+        return jsonify({"containers": prof.get("containers", []), "git": prof.get("git", {})})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @pm_bp.get("/presence")
 def pm_presence():
     project = request.args.get("project", "") or None

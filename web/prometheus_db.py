@@ -95,6 +95,18 @@ CREATE TABLE IF NOT EXISTS prometheus_connections (
 CREATE INDEX IF NOT EXISTS idx_pmc_pslug_kind ON prometheus_connections(project_slug, kind);
 CREATE INDEX IF NOT EXISTS idx_pmc_fingerprint ON prometheus_connections(fingerprint);
 
+CREATE TABLE IF NOT EXISTS prometheus_tech_profile (
+  project_slug TEXT PRIMARY KEY,
+  repo_path TEXT,
+  languages_json TEXT,
+  frameworks_json TEXT,
+  databases_json TEXT,
+  containers_json TEXT,
+  git_json TEXT,
+  analyzed_at TIMESTAMP,
+  scan_duration_ms INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS prometheus_project_reports (
   project_slug TEXT PRIMARY KEY,
   summary TEXT,
