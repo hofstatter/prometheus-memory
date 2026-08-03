@@ -405,11 +405,31 @@ def memory_remember():
     content = (data.get("content") or "").strip()
     if not content:
         return jsonify({"error": "content vazio"}), 400
+    agent_id = data.get("agent_id", "")
+    source = data.get("source", "api")
     try:
+        importance = float(data.get("importance", 0.5))
+    except (TypeError, ValueError):
+        importance = 0.5
+    try:
+        if data.get("infer"):
+            from memory import remember_inferred
+            project_slug = (data.get("project_slug") or "").strip()
+            if project_slug:
+                from projects_registry import slugify
+                slug = slugify(project_slug)
+                res = remember_inferred(content, channel=f"proj:{slug}", session=f"prom-proj-{slug}",
+                                        source=source, importance=importance)
+                res["project_slug"] = slug
+                res["agent_id"] = agent_id or ""
+            else:
+                res = remember_inferred(content, agent_id=agent_id, source=source, importance=importance)
+                res["agent_id"] = agent_id or ""
+                res["project_slug"] = ""
+            return jsonify({**res, "id": (res["ids"] or [""])[0]}), 201
         from memory import remember
-        mid = remember(content, agent_id=data.get("agent_id", ""), source=data.get("source", "api"),
-                       importance=float(data.get("importance", 0.5)))
-        return jsonify({"id": mid, "stored": True, "agent_id": data.get("agent_id", "default")}), 201
+        mid = remember(content, agent_id=agent_id, source=source, importance=importance)
+        return jsonify({"id": mid, "stored": True, "agent_id": agent_id or "default"}), 201
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
 
@@ -421,8 +441,18 @@ def memory_recall():
     if not query:
         return jsonify({"error": "query vazia"}), 400
     try:
-        from memory import recall
-        results = recall(query, agent_id=data.get("agent_id", ""), top_k=int(data.get("top_k", 5)))
+        from memory import apply_threshold, recall
+        try:
+            top_k = int(data.get("top_k", 5))
+        except (TypeError, ValueError):
+            return jsonify({"error": "top_k deve ser inteiro"}), 400
+        results = recall(query, agent_id=data.get("agent_id", ""), top_k=top_k)
+        threshold = data.get("threshold")
+        if threshold is not None:
+            try:
+                results = apply_threshold(results, float(threshold))
+            except (TypeError, ValueError):
+                pass
         return jsonify({"count": len(results), "agent_id": data.get("agent_id", "default"),
                         "results": [{"id": r.get("id"), "content": r.get("content"), "score": r.get("score")} for r in results]})
     except Exception as e:

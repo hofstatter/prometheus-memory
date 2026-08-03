@@ -28,7 +28,8 @@ Pipeline L0→L3 · Web UI 5 abas + editor · RAG multimodal + OCR · Notes · O
 - [ ] FTS5 para busca de notas
 
 ## v0.3 — Escala & Inteligência
-- [ ] Dedup semântico + retrieval híbrido FTS5/BM25 + semântico + threshold (Mem0 parity — P0c)
+- [x] **Mem0 parity essencial — Fase C** (executada 03/08): extração LLM single-pass + grounding temporal + dedup SHA-256 scoped por channel + threshold no recall + entities v1 — `PLAN_MEM0_PATTERNS.md` M1-M2 adaptado (ver CHANGELOG)
+- [ ] Dedup semântico + retrieval híbrido FTS5/BM25 + semântico + threshold (Mem0 parity — P0c, refinamento)
 - [ ] Decay/eviction de memórias (políticas estilo Letta core/archival; persona imune)
 - [ ] Consolidação orientada a eventos (fila) em vez de cron
 - [ ] Sharding por agente; particionamento de rag_chunks

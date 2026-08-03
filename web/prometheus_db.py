@@ -128,6 +128,32 @@ CREATE TABLE IF NOT EXISTS prometheus_skills (
 CREATE INDEX IF NOT EXISTS idx_psk_slug ON prometheus_skills(project_slug, status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_psk_uniq ON prometheus_skills(project_slug, name);
 
+CREATE TABLE IF NOT EXISTS prometheus_dedup_hashes (
+  channel TEXT NOT NULL,
+  content_hash TEXT NOT NULL,
+  memory_id TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (channel, content_hash)
+);
+
+CREATE TABLE IF NOT EXISTS prometheus_entities (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  type TEXT DEFAULT 'auto',
+  first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  mention_count INTEGER DEFAULT 1,
+  UNIQUE(name, type)
+);
+CREATE INDEX IF NOT EXISTS idx_pme_name ON prometheus_entities(name);
+
+CREATE TABLE IF NOT EXISTS prometheus_memory_entities (
+  memory_id TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  PRIMARY KEY (memory_id, entity_id)
+);
+CREATE INDEX IF NOT EXISTS idx_pmme_entity ON prometheus_memory_entities(entity_id);
+
 CREATE TABLE IF NOT EXISTS prometheus_project_reports (
   project_slug TEXT PRIMARY KEY,
   summary TEXT,

@@ -58,6 +58,82 @@ def recall_lane(channel: str, query: str, top_k: int = 5) -> list:
     return _lane(channel, "").recall(query, top_k=top_k, channel_id=channel)
 
 
+def apply_threshold(results: list, threshold: float) -> list:
+    """Filtra resultados abaixo do threshold de score (P0c — recall híbrido)."""
+    if threshold is None or threshold <= 0:
+        return results
+    out = []
+    for r in results:
+        try:
+            score = float(r.get("score") or 0)
+        except (TypeError, ValueError):
+            score = 0.0
+        if score >= threshold:
+            out.append(r)
+    return out
+
+
+def remember_inferred(content: str, *, agent_id: str = "", channel: str = None,
+                      session: str = None, source: str = "api",
+                      importance: float = 0.5) -> dict:
+    """Mem0-style: extração LLM single-pass + dedup SHA-256 scoped por channel.
+
+    channel/session explícitos → lane arbitrária (proj:<slug>); senão agent lane.
+    Fallback: LLM indisponível → grava raw (degraded=True). Nunca quebra o write.
+    """
+    from datetime import date
+    from dedup import content_hash, fetch_hashes, record_hashes
+    from entity_store import extract_and_link
+    from extractor import extract_facts, ground_temporal
+
+    chan = channel or (f"agent-{agent_id}" if agent_id else "default")
+    sess = session or f"prom-agent-{agent_id or 'default'}"
+    today = date.today().isoformat()
+
+    existing_hashes = fetch_hashes(chan)
+    recent = []
+    existing_texts = []
+    try:
+        recent = recall_lane(chan, "decisao implementacao", top_k=5)
+        existing_texts = [x.get("content", "")[:300] for x in recall_lane(chan, content, top_k=10)]
+    except Exception:
+        pass
+    recent_texts = [x.get("content", "")[:200] for x in recent]
+    grounded = ground_temporal(content, today)
+
+    facts = []
+    try:
+        facts = extract_facts(grounded, recent_texts, existing_texts, today)
+    except Exception:
+        facts = []
+    # garantia pós-extração (N2): datas relativas que escaparem do prompt viram absolutas
+    facts = [ground_temporal(f, today) for f in facts if f]
+
+    if not facts:
+        mid = remember_lane(chan, sess, content, source=source, importance=importance, scope="global")
+        return {"ids": [mid], "stored": 1, "skipped_duplicates": 0, "degraded": True}
+
+    ids, skipped = [], []
+    for fact in facts:
+        h = content_hash(fact)
+        if h in existing_hashes:
+            skipped.append(fact)
+            continue
+        existing_hashes.add(h)
+        try:
+            mid = remember_lane(chan, sess, fact, source=source, importance=importance, scope="global")
+            ids.append((h, mid))
+            try:
+                extract_and_link(mid, fact)
+            except Exception:
+                pass
+        except Exception:
+            skipped.append(fact)
+    record_hashes(chan, ids)
+    return {"ids": [mid for _, mid in ids], "stored": len(ids),
+            "skipped_duplicates": len(skipped), "degraded": False}
+
+
 def list_agents() -> list:
     """Canais de agentes com memória (distinct agent-<id> no DB)."""
     import sqlite3
