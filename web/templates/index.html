@@ -382,6 +382,7 @@ loadProjects();loadStats();searchMemories();
 
 function loadProjects(){
   fetch('/api/projects').then(r=>r.json()).then(projects=>{
+    if(!Array.isArray(projects))return; // 401/erro → não quebra o loader
     const sel=document.getElementById('project-filter');
     projects.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent='['+p+']';sel.appendChild(o)})
   })
@@ -626,6 +627,8 @@ async function renderCanvas(){
   if(!el)return;
   try{
     const r=await fetch('/api/canvas');
+    if(r.status===401){el.innerHTML='<p style="color:var(--ink-muted);text-align:center;padding:2rem">🔒 Canvas indisponível — faça login para ver o gráfico</p>';return}
+    if(!r.ok){el.innerHTML='<p style="color:var(--ink-muted);text-align:center;padding:2rem">Canvas indisponível</p>';return}
     const d=await r.json();
     const id='mmd-'+Date.now();
     const {svg}=await mermaid.render(id, d.mermaid);
