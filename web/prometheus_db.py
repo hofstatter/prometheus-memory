@@ -140,6 +140,7 @@ CREATE TABLE IF NOT EXISTS prometheus_entities (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   type TEXT DEFAULT 'auto',
+  canonical_id TEXT,
   first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   mention_count INTEGER DEFAULT 1,
@@ -184,6 +185,16 @@ def init_schema() -> None:
         return
     con = get_conn()
     con.executescript(SCHEMA)
+    _migrate_entities_canonical(con)
     con.commit()
     con.close()
     _init_done = True
+
+
+def _migrate_entities_canonical(con: sqlite3.Connection) -> None:
+    """v1.2 — adiciona canonical_id a bancos criados antes da coluna existir."""
+    cols = [r[1] for r in con.execute("PRAGMA table_info(prometheus_entities)").fetchall()]
+    if cols and "canonical_id" not in cols:
+        con.execute("ALTER TABLE prometheus_entities ADD COLUMN canonical_id TEXT")
+    # idempotente nos dois caminhos (novo DB já tem a coluna no CREATE TABLE)
+    con.execute("CREATE INDEX IF NOT EXISTS idx_pme_canonical ON prometheus_entities(canonical_id)")

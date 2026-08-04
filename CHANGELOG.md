@@ -1,6 +1,25 @@
 # Changelog
 
-## [0.3.0-dev] — 2026-08-04
+## [0.3.0-dev] — 2026-08-04 (Parte 2 — Qualidade do Recall P2)
+
+### Implementado — NER v1.2 (Aliases/Canonização)
+
+- 🏷️ **`canonical_id`** em `prometheus_entities` (migração guard `PRAGMA table_info` — padrão `_fts_ready`): alias = linha apontando pro canônico.
+- 🔀 **`resolve_canonical(con, name, type_)`** em `web/entity_store.py`: normalize (NFKD sem acentos + colapsa pontuação) → match exato → containment ≥3 chars **dentro do mesmo type** (anti over-merge "AI"⊂"AIM" e "Apple" org≠tech). Aplicado no **write** (`extract_and_link`) — fragmentação nova impedida na fonte.
+- 🧮 **`merge_into(con, alias, canonical)`**: soma `mention_count`, re-linka `INSERT OR IGNORE`, marca `canonical_id` (alias não deletado — rastreável).
+- 🧹 **`scripts/merge_entities.py`** (novo): `--dry-run/--apply` + `--prune` + backup automático do DB. Aplicado na produção: **7 → 4 entidades** (prune de Mini/Model/Vision Language; Visionário mantido). Teste ao vivo: "Prometheus" → resolve para "Prometheus Memory" (sem fragmento novo).
+- ✅ Testes C16-C19 (containment, acentos, types separados, merge) — **78 passed, 1 skip** (74 + 4 novos de harness M5).
+
+### Implementado — M5: LongMemEval no CI (report-only)
+
+- 📊 **`evals/longmemeval_runner.py`** (novo): ingest raw (infer=False, prefixo de data por sessão) → recall top-5 → QA DeepSeek extrativo → judge estrito → QA accuracy por tipo + total → `evals/REPORT_LONGMEMEVAL.md`.
+- 🗃️ **Dataset**: `longmemeval_s_cleaned` (500 instâncias, 277MB, **gitignored** em `evals/data/`); subset estratificado por tipo, seed 42. ⚠️ **EN** (sessões oficiais são EN; PT-BR exigiria ~50k turnos traduzidos — script `translate_longmemeval_subset.py` guardado p/ futuro).
+- 🚀 **`.github/workflows/eval.yml`** (novo): path-filtered (`memory/entity_store/dedup/extractor/evals/llm_backend`) + `workflow_dispatch` + cron domingo 4h; cache do dataset; artifact com o relatório; **report-only** (não quebra build). Requer **GH Secret `DEEPSEEK_API_KEY`** (ação manual do Herbert).
+- 🔬 **Baseline: QA accuracy 47.4%** (19: temporal 80% · knowledge-update 67% · multi-session 20% · single-user 33%).
+- 🐛 **Bug upstream Mnemosyne registrado**: `memory_embeddings` com FK→`memories` (episódica) quebra insert de embedding de working_memory em DB fresco (`FOREIGN KEY constraint failed`) → recall vetorial morre silenciosamente. Workaround `_prepare_eval_db()` (rebuild sem FK) no runner; produção intacta. Ver `docs/PLAN_QUALIDADE_RECALL_P2.md` §Descobertas.
+- ✅ Testes L1-L4 (`tests/test_longmemeval.py`): estrato, `_render_content` (decodifica snake_case), `_parse_int`.
+
+## [0.3.0-dev] — 2026-08-04 (Parte 1 — Qualidade do Recall)
 
 ### Implementado — Qualidade do Recall (PLAN_QUALIDADE_RECALL.md)
 

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Entity Store (v1.1 — NER LLM) — extração de entidades com tipos fixos + linking.
+"""Entity Store (v1.2 — aliases/canonização) — extração LLM + tipos + resolução canônica.
 
 v1.1: extração LLM em lote (person|org|project|tech|other), acrônimos, fallback
-para a heurística v1 quando o LLM está indisponível (ENTITY_LLM=off ou vazio).
-Aliases/canonização ficam para v1.2.
+heurística v1 (ENTITY_LLM=off ou LLM indisponível).
+v1.2: canonical_id — fragmentos ("MiniMax" vs "MiniMax M3") resolvem para um
+canônico no write; merge one-shot de duplicatas/lixo legado via merge_entities.py.
 """
 import json
 import os
 import re
 import sys
+import unicodedata
 import uuid
 from pathlib import Path
 
@@ -56,6 +58,39 @@ def extract_entities(text: str) -> set:
             continue
         out.add(c.strip())
     return out
+
+
+def normalize_name(name: str) -> str:
+    """Normaliza para comparação de aliases: lowercase + sem acentos + pontuação colapsada."""
+    n = unicodedata.normalize("NFKD", name or "")
+    n = "".join(c for c in n if not unicodedata.combining(c))
+    return re.sub(r"[\s\-_.]+", " ", n.lower()).strip()
+
+
+def resolve_canonical(con, name: str, type_: str):
+    """Resolve `name` para uma entidade canônica existente do mesmo type.
+
+    Match exato vence sempre; senão containment (prefixo/sufixo) com canônico =
+    nome mais longo. Retorna id ou None (cria nova entidade).
+    """
+    n = normalize_name(name)
+    if not n:
+        return None
+    rows = con.execute(
+        "SELECT id, name FROM prometheus_entities WHERE type = ?", (type_,)
+    ).fetchall()
+    best = None
+    best_len = -1
+    for r in rows:
+        rn = normalize_name(r["name"])
+        if rn == n:
+            return r["id"]
+        # containment só para nomes ≥3 chars (evita "AI" ⊂ "AIM")
+        if min(len(n), len(rn)) >= 3 and (n in rn or rn in n):
+            if len(rn) > best_len:
+                best = r
+                best_len = len(rn)
+    return best["id"] if best else None
 
 
 def _parse_entities(raw: str) -> list:
@@ -143,26 +178,44 @@ def extract_and_link(memory_id: str, text: str, entities: list = None) -> int:
             typ = ent.get("type") or "auto"
             if typ not in VALID_TYPES:
                 typ = "auto"
-            row = con.execute(
-                "SELECT id, type FROM prometheus_entities WHERE name = ?", (name,)
-            ).fetchone()
-            if row:
-                eid = row["id"]
-                if row["type"] == "auto" and typ != "auto":
+            # v1.2: resolve para canônico existente do mesmo type antes do lookup
+            canonical = resolve_canonical(con, name, typ)
+            if canonical is not None:
+                c_row = con.execute(
+                    "SELECT type FROM prometheus_entities WHERE id = ?", (canonical,)
+                ).fetchone()
+                if c_row and c_row["type"] == "auto" and typ != "auto":
                     con.execute(
                         "UPDATE prometheus_entities SET type = ?, last_seen = CURRENT_TIMESTAMP, "
-                        "mention_count = mention_count + 1 WHERE id = ?", (typ, eid)
+                        "mention_count = mention_count + 1 WHERE id = ?", (typ, canonical)
                     )
                 else:
                     con.execute(
                         "UPDATE prometheus_entities SET last_seen = CURRENT_TIMESTAMP, "
-                        "mention_count = mention_count + 1 WHERE id = ?", (eid,)
+                        "mention_count = mention_count + 1 WHERE id = ?", (canonical,)
                     )
+                eid = canonical
             else:
-                eid = uuid.uuid4().hex[:12]
-                con.execute(
-                    "INSERT INTO prometheus_entities (id, name, type) VALUES (?,?, ?)", (eid, name, typ)
-                )
+                row = con.execute(
+                    "SELECT id, type FROM prometheus_entities WHERE name = ?", (name,)
+                ).fetchone()
+                if row:
+                    eid = row["id"]
+                    if row["type"] == "auto" and typ != "auto":
+                        con.execute(
+                            "UPDATE prometheus_entities SET type = ?, last_seen = CURRENT_TIMESTAMP, "
+                            "mention_count = mention_count + 1 WHERE id = ?", (typ, eid)
+                        )
+                    else:
+                        con.execute(
+                            "UPDATE prometheus_entities SET last_seen = CURRENT_TIMESTAMP, "
+                            "mention_count = mention_count + 1 WHERE id = ?", (eid,)
+                        )
+                else:
+                    eid = uuid.uuid4().hex[:12]
+                    con.execute(
+                        "INSERT INTO prometheus_entities (id, name, type) VALUES (?,?, ?)", (eid, name, typ)
+                    )
             con.execute(
                 "INSERT OR IGNORE INTO prometheus_memory_entities (memory_id, entity_id) VALUES (?,?)",
                 (memory_id, eid),
@@ -172,6 +225,33 @@ def extract_and_link(memory_id: str, text: str, entities: list = None) -> int:
     finally:
         con.close()
     return linked
+
+
+def merge_into(con, alias_id: str, canonical_id: str) -> dict:
+    """Funde `alias_id` em `canonical_id`: soma menções, re-linka memórias, marca alias.
+
+    Alias não é deletado (rastreabilidade): fica com canonical_id preenchido.
+    """
+    alias = con.execute(
+        "SELECT name, type, mention_count FROM prometheus_entities WHERE id = ?", (alias_id,)
+    ).fetchone()
+    if not alias:
+        return {"ok": False, "error": "alias nao existe"}
+    con.execute(
+        "UPDATE prometheus_entities SET mention_count = mention_count + ? WHERE id = ?",
+        (alias["mention_count"], canonical_id),
+    )
+    con.execute(
+        """INSERT OR IGNORE INTO prometheus_memory_entities (memory_id, entity_id)
+           SELECT memory_id, ? FROM prometheus_memory_entities WHERE entity_id = ?""",
+        (canonical_id, alias_id),
+    )
+    con.execute("DELETE FROM prometheus_memory_entities WHERE entity_id = ?", (alias_id,))
+    con.execute(
+        "UPDATE prometheus_entities SET canonical_id = ? WHERE id = ?", (canonical_id, alias_id)
+    )
+    return {"ok": True, "alias": alias["name"], "canonical": canonical_id,
+            "mentions_moved": alias["mention_count"]}
 
 
 def memories_for(entity_name: str) -> list:

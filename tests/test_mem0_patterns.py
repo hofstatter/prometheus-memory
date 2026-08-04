@@ -192,3 +192,62 @@ def test_c15_notes_index_note(tmp_path, monkeypatch):
     rows = db.execute("SELECT name FROM notes_fts WHERE name = 'nova.md'").fetchall()
     assert rows == [], "delete deve remover do índice"
     db.close()
+
+
+def test_c16_entities_containment_resolve():
+    es = _mod("entity_store")
+    db = _mod("prometheus_db")
+    con = db.get_conn()
+    con.execute("INSERT INTO prometheus_entities (id, name, type) VALUES ('e1', 'MiniMax M3', 'tech')")
+    con.commit()
+    assert es.resolve_canonical(con, "MiniMax", "tech") == "e1"
+    assert es.resolve_canonical(con, "MiniMax M3", "tech") == "e1"
+    assert es.resolve_canonical(con, "MiniMax", "org") is None, "type diferente não resolve"
+    con.close()
+
+
+def test_c17_entities_accent_normalize():
+    es = _mod("entity_store")
+    db = _mod("prometheus_db")
+    con = db.get_conn()
+    con.execute("INSERT INTO prometheus_entities (id, name, type) VALUES ('e2', 'Visão', 'tech')")
+    con.commit()
+    assert es.normalize_name("Visão") == "visao"
+    assert es.resolve_canonical(con, "Visao", "tech") == "e2", "acento normaliza para canônico"
+    con.close()
+
+
+def test_c18_entities_types_do_not_merge():
+    es = _mod("entity_store")
+    db = _mod("prometheus_db")
+    con = db.get_conn()
+    con.execute("INSERT INTO prometheus_entities (id, name, type) VALUES ('e3', 'Apple', 'org')")
+    con.execute("INSERT INTO prometheus_entities (id, name, type) VALUES ('e4', 'Apple', 'tech')")
+    con.commit()
+    assert es.resolve_canonical(con, "Apple", "org") == "e3"
+    assert es.resolve_canonical(con, "Apple", "tech") == "e4"
+    assert es.resolve_canonical(con, "AI", "tech") is None, "containment < 3 chars não merge"
+    con.close()
+
+
+def test_c19_merge_sums_and_relinks():
+    es = _mod("entity_store")
+    db = _mod("prometheus_db")
+    con = db.get_conn()
+    con.execute("INSERT INTO prometheus_entities (id, name, type, mention_count) "
+                "VALUES ('c1', 'FASHN', 'project', 5)")
+    con.execute("INSERT INTO prometheus_entities (id, name, type, mention_count) "
+                "VALUES ('c2', 'FASHN Projeto', 'project', 3)")
+    con.execute("INSERT INTO prometheus_memory_entities (memory_id, entity_id) VALUES ('m1', 'c2')")
+    con.commit()
+    res = es.merge_into(con, "c2", "c1")
+    assert res["ok"] and res["mentions_moved"] == 3
+    c1 = con.execute("SELECT mention_count FROM prometheus_entities WHERE id = 'c1'").fetchone()
+    assert c1["mention_count"] == 8, "menções somadas"
+    linked = con.execute(
+        "SELECT memory_id FROM prometheus_memory_entities WHERE entity_id = 'c1'"
+    ).fetchall()
+    assert "m1" in [r["memory_id"] for r in linked], "memória re-linkada no canônico"
+    alias = con.execute("SELECT canonical_id FROM prometheus_entities WHERE id = 'c2'").fetchone()
+    assert alias["canonical_id"] == "c1", "alias marcado"
+    con.close()
