@@ -48,7 +48,7 @@ literalmente **fica mais inteligente a cada ciclo**, sem intervenção humana.
 
 - 🔍 **Timeline hierárquica** — L3→L2→L1 com drill-down, sidebar de projetos/datas/stats
 - 🕸️ **Grafo de conhecimento** — G6.js d3-force estilo Obsidian: glow, hover-activate, clique → detalhes
-- 📐 **Mermaid Canvas** — diagrama de estado do agente gerado automaticamente, zoom, clique → conteúdo offloaded
+- 📐 **Mermaid Canvas** — diagrama de estado do agente gerado automaticamente, zoom, clique → conteúdo offloaded; **v2: multi-projeto** (um bloco por projeto com o fluxo de eventos Backlog→Doing→Done, chips de projeto, legenda e link para a aba Projetos)
 - 📄 **RAG local multimodal** — upload de PDF, TXT, MD, DOCX, PNG, JPG com OCR automático (Tesseract), busca vetorial
 - 📝 **Notes** — importação por URL (GitHub, X/Twitter, sites) com sanitização e renderizador Markdown próprio
 - ✏️ **Editor inline** — edição e exclusão de memórias direto na UI (7 abas + editor modal)

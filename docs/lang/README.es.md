@@ -10,7 +10,7 @@ Pipeline de **memoria jerárquica L0→L3** para agentes de IA — el segundo ce
 
 - **Timeline jerárquica** L3→L2→L1 con proyectos, fechas y stats
 - **Grafo de conocimiento** animado estilo Obsidian (física continua)
-- **Canvas Mermaid** auto-generado del flujo del agente
+- **Canvas Mermaid** auto-generado del flujo del agente — **v2: multi-proyecto** (un bloque por proyecto con flujo Backlog→Doing→Done, chips, leyenda y enlace a la pestaña Proyectos)
 - **RAG multimodal** — PDF, TXT, MD, DOCX, imágenes con OCR
 - **Notes** — importa contenido de URLs (GitHub, X, sitios web) con sanitización
 - **Offloading de logs** — hasta 61% menos tokens en contexto
