@@ -60,6 +60,7 @@ literalmente **fica mais inteligente a cada ciclo**, sem intervenção humana.
 - 🧱 **Stack & Runtime (v0.2)** — barra de linguagens estilo GitHub (por bytes, docs/config separados), frameworks (monorepo-aware), bancos (compose/DATABASE_URL), containers e git (branch/commits/dirty ou "não versionado")
 - 🧩 **Skills por projeto (v0.2)** — Skill Builder detecta padrões nos eventos → **draft** com evidências → aprovação humana → `active` → candidata a global
 - 🧬 **Padrões Mem0 V3 (v0.2)** — extração LLM single-pass com grounding temporal ("hoje/ontem" → datas absolutas), dedup SHA-256 scoped por channel, linking de entidades e threshold no recall
+- 🌐 **MCP remoto multi-usuário (v0.3)** — devs de qualquer cidade/país conectam o harness (OpenCode, Claude Code, Codex…) via **Tailscale** (rede privada) + **servidor MCP SSE** (`:8778`) com **token por dev** (só hash, revogável); cada dev escreve **apenas os próprios** eventos/memórias (`author_id` imposto no servidor) — base para o painel CTO/CEO. Ver `docs/PLAN_MCP_MULTI_USUARIO_REMOTO.md`
 - 🎨 Dark mode, responsivo, zero build step (sem node_modules)
 
 ## Arquitetura
