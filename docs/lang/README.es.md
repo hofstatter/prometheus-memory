@@ -21,6 +21,7 @@ Pipeline de **memoria jerárquica L0→L3** para agentes de IA — el segundo ce
 - **Stack & Runtime (v0.2)** — barra de lenguajes estilo GitHub, frameworks, bases de datos, contenedores y git por proyecto
 - **Skills por proyecto (v0.2)** — borrador → aprobación humana → activa → candidata a global
 - **Patrones Mem0 V3 (v0.2)** — extracción LLM single-pass con fechas absolutas + dedup SHA-256 + entidades
+- **MCP remoto multiusuario (v0.3)** — devs de cualquier ciudad/país conectan su harness (OpenCode, Claude Code, Codex…) vía **Tailscale** (red privada) + **servidor MCP SSE** (`:8778`) con **token por dev** (solo hash, revocable); cada dev escribe **solo sus propios** eventos/memorias (`author_id` impuesto en el servidor) — base del panel CTO/CEO
 
 ## Instalación (1 comando)
 
