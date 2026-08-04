@@ -2,6 +2,9 @@
 
 ## [0.3.0-dev] — 2026-08-03
 
+### GIT GATE (Regra 20 — fluxo de confirmação)
+- 🔒 **GIT GATE ativo**: nenhum `git push` sem revisão do Inspetor + **confirmação SIM/NÃO do Inspetor** (identificado "🔍 Inspetor"), 1 por push. `pre-push` hook bloqueia sem `.git/PUSH_APPROVED`. Docs/features não implementadas não sobem ao git. Nunca apagar plano sem ordem explícita.
+
 ### Implementado — Canvas v2 por projeto
 
 - 🧭 **`scripts/canvas_generator.py`** (novo): Mermaid **multi-projeto** (`flowchart TD` + `subgraph` por `project_slug`) — nós por evento (`event_type`/`status_hint` → classes done/doing/blocked/backlog, máx 5/projeto), arestas pontilhadas entre projetos pelo mesmo agente, sanitização de títulos, **fallback v1** (`memory_aggregator.generate_mermaid_canvas`) quando sem eventos, `mode_of()` (projects/legacy), `_WEB_CANDIDATES` p/ repo/prod/cron.
