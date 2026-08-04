@@ -8,6 +8,8 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 import requests as http
 
+from prometheus_db import get_conn
+
 notes_bp = Blueprint('notes', __name__, url_prefix='/api/notes')
 NOTES_DIR = Path(os.environ.get("PROMETHEUS_NOTES_DIR", Path.home() / "notes"))
 NOTES_DIR.mkdir(parents=True, exist_ok=True)
@@ -230,6 +232,7 @@ def import_url():
     body = sanitize_markdown(result['text'])
     content = f"# {result['title']}\n\n**Fonte:** {url}\n**Extraído em:** {datetime.now().isoformat()}\n**Método:** {result['source']}\n\n{body}"
     filepath.write_text(content)
+    _index_note(filepath.relative_to(NOTES_DIR).as_posix())
 
     return jsonify({
         "id": filepath.relative_to(NOTES_DIR).as_posix(),
@@ -260,6 +263,7 @@ def update_note(note_id):
     if len(content) > 1_000_000:
         return jsonify({"error": "content too large"}), 413
     filepath.write_text(content)
+    _index_note(filepath.relative_to(NOTES_DIR).as_posix())
     return jsonify({"ok": True})
 
 @notes_bp.delete("/<path:note_id>")
@@ -270,6 +274,7 @@ def delete_note(note_id):
     if not filepath.exists() or filepath.suffix != ".md":
         return jsonify({"error": "not found"}), 404
     filepath.unlink()
+    _index_note(filepath.relative_to(NOTES_DIR).as_posix())
     return jsonify({"ok": True})
 
 @notes_bp.post("/search")
@@ -294,31 +299,80 @@ def search_notes():
     return jsonify(results[:10])
 
 
+def _fts_ready(db) -> None:
+    """Garante a tabela notes_fts com coluna mtime; rebuild único se schema antigo."""
+    cols = [r[1] for r in db.execute("PRAGMA table_info(notes_fts)").fetchall()]
+    if cols and "mtime" not in cols:
+        db.execute("DROP TABLE IF EXISTS notes_fts")
+    db.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts "
+        "USING fts5(name, content, mtime, tokenize='porter')"
+    )
+    db.commit()
+
+
+def _sync_notes_fts(db) -> None:
+    """Sync incremental por mtime — sem rebuild e sem duplicatas.
+
+    Notas novas são inseridas, notas com mtime alterado são atualizadas e notas
+    removidas do disco saem do índice.
+    """
+    _fts_ready(db)
+    indexed = {r["name"]: r["mtime"] for r in db.execute("SELECT name, mtime FROM notes_fts").fetchall()}
+    seen = set()
+    for f in NOTES_DIR.rglob("*.md"):
+        rel = f.relative_to(NOTES_DIR).as_posix()
+        seen.add(rel)
+        mtime = int(f.stat().st_mtime)
+        content = f.read_text(errors="replace")
+        if rel not in indexed:
+            db.execute("INSERT INTO notes_fts(name, content, mtime) VALUES(?,?,?)", (rel, content, mtime))
+        elif int(indexed[rel]) != mtime:
+            db.execute("UPDATE notes_fts SET content=?, mtime=? WHERE name=?", (content, mtime, rel))
+    for rel in set(indexed) - seen:
+        db.execute("DELETE FROM notes_fts WHERE name=?", (rel,))
+    db.commit()
+
+
+def _index_note(rel_path: str) -> None:
+    """Atualiza o índice de UMA nota (pós create/update/delete) — O(1), sem varredura.
+
+    Se o arquivo existe e é .md → upsert (delete+insert por nome com mtime atual);
+    senão (delete/remoção externa) → remove do índice.
+    """
+    db = get_conn()
+    try:
+        _fts_ready(db)
+        f = NOTES_DIR / rel_path
+        if f.exists() and f.suffix == ".md":
+            db.execute("DELETE FROM notes_fts WHERE name = ?", (rel_path,))
+            db.execute(
+                "INSERT INTO notes_fts(name, content, mtime) VALUES(?,?,?)",
+                (rel_path, f.read_text(errors="replace"), int(f.stat().st_mtime)),
+            )
+        else:
+            db.execute("DELETE FROM notes_fts WHERE name = ?", (rel_path,))
+        db.commit()
+    finally:
+        db.close()
+
+
 @notes_bp.post("/fts")
 def fts_notes():
-    """Busca FTS5 (rank) nas notas — upgrade do search por substring."""
+    """Busca FTS5 (rank) nas notas — índice incremental sincronizado."""
     data = request.get_json() or {}
     query = (data.get("query") or "").strip()
     if not query:
         return jsonify([])
-    import sqlite3
-    from pathlib import Path as _P
-    db_path = _P(__import__("os").environ.get("PROMETHEUS_DB", _P.home() / ".hermes" / "mnemosyne" / "data" / "mnemosyne.db"))
-    db = sqlite3.connect(str(db_path))
+    db = get_conn()
     try:
-        db.execute("""CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(name, content, tokenize='porter')""")
-        for f in NOTES_DIR.rglob("*.md"):
-            try:
-                db.execute("INSERT INTO notes_fts(name, content) VALUES(?, ?)",
-                           (f.relative_to(NOTES_DIR).as_posix(), f.read_text(errors="replace")))
-            except Exception:
-                continue
-        db.commit()
+        _sync_notes_fts(db)
         rows = db.execute(
-            "SELECT name, snippet(notes_fts, 1, '<b>', '</b>', '...', 30) FROM notes_fts WHERE notes_fts MATCH ? ORDER BY rank LIMIT 10",
+            "SELECT name, snippet(notes_fts, 1, '<b>', '</b>', '...', 30) AS snip "
+            "FROM notes_fts WHERE notes_fts MATCH ? ORDER BY rank LIMIT 10",
             (query,)
         ).fetchall()
-        return jsonify([{"id": r[0], "snippet": r[1]} for r in rows])
+        return jsonify([{"id": r["name"], "snippet": r["snip"]} for r in rows])
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
     finally:

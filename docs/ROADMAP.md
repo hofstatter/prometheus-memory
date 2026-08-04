@@ -27,11 +27,11 @@ Pipeline L0→L3 · Web UI 5 abas + editor · RAG multimodal + OCR · Notes · O
 - [ ] **sqlite-vec `vec0` KNN** no recall de memórias (RAG já usa; resta o caminho de memórias no Mnemosyne upstream)
 - [ ] Fila assíncrona de indexing (upload → 202, worker processa)
 - [ ] Retries + circuit breaker nas chamadas LLM; métricas `/metrics`
-- [ ] FTS5 para busca de notas
+- [x] FTS5 para busca de notas (03/08: rota `/api/notes/fts`; 04/08: sync incremental por mtime — fim do rebuild-por-request que duplicava `notes_fts`)
 
 ## v0.3 — Escala & Inteligência
 - [x] **Mem0 parity essencial — Fase C** (executada 03/08): extração LLM single-pass + grounding temporal + dedup SHA-256 scoped por channel + threshold no recall + entities v1 — `PLAN_MEM0_PATTERNS.md` M1-M2 adaptado (ver CHANGELOG)
-- [ ] Dedup semântico + retrieval híbrido FTS5/BM25 + semântico + threshold (Mem0 parity — P0c, refinamento)
+- [x] Dedup semântico + retrieval híbrido FTS5/BM25 + semântico + threshold (Mem0 parity — P0c, refinamento) — 04/08: recall híbrido é nativo do Mnemosyne (50% vetor + 30% FTS5 + 20% importância, `fts_working` ativo); dedup semântico implementado reusando o recall (score ≥ 0.90 + overlap), threshold calibrado contra produção (distintos ≤ 0.42; 0% falso-positivo). `PLAN_QUALIDADE_RECALL.md`
 - [ ] Decay/eviction de memórias (políticas estilo Letta core/archival; persona imune)
 - [ ] Consolidação orientada a eventos (fila) em vez de cron
 - [ ] Sharding por agente; particionamento de rag_chunks

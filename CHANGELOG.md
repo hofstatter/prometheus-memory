@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0-dev] — 2026-08-04
+
+### Implementado — Qualidade do Recall (PLAN_QUALIDADE_RECALL.md)
+
+- 🏷️ **NER LLM entities v1.1** (`web/entity_store.py`): extração **LLM em lote** (1 chamada por `remember_inferred`, linking por substring — índice do LLM é hint, com scan-fallback), **5 tipos fixos** (`person|org|project|tech|other`), **acrônimos capturados** (FASHN/EVSCAR/API/MCP — o regex v1 perdia), **fallback em cascata** para a heurística v1 quando o LLM está indisponível (`ENTITY_LLM=on|off`, default on), **upgrade de type** `auto`→real no mention (dados v1 se curam organicamente).
+- 🔁 **Dedup semântico** (`web/memory.py`): `remember_inferred` reusa o **recall já existente** (zero chamadas LLM extras) — fato com score ≥ `SEMANTIC_DEDUP_THRESHOLD` (default 0.90) + contenção textual OU overlap relativo de tokens ≥ 0.65 vira `skipped_duplicates`; guarda anti over-dedup em conteúdo multi-fato; `SEMANTIC_DEDUP=off` desliga.
+- 📏 **Calibração** (`scripts/calibrate_semantic_dedup.py`, novo): rodada contra produção — pares distintos pontuam no máx **0.42** (p99), self ~1.0 → **threshold 0.90 confirmado com margem** (0% falso-positivo em 40 pares).
+- 🔎 **Fix FTS5 de notas** (`web/notes_routes.py`): fim do rebuild-por-request (duplicava `notes_fts` a cada busca) — **sync incremental por mtime** (insert/update/delete), **migração automática** do schema antigo (rebuild único na primeira chamada), `_index_note()` nos CRUD.
+- ✅ **Testes**: `tests/test_mem0_patterns.py` C8-C14 (acrônimos, upgrade de type, fallback, batch mapping, dedup semântico, guarda, notes_fts idempotente) — **14 passed, 0 regressão**.
+- 📋 Plano: `docs/PLAN_QUALIDADE_RECALL.md` (aprovado por Herbert 04/08; não commitado — regra docs não implementados).
+- 🔒 Nada publicado no git (GIT GATE). Arquivos alterados com backup em `~/backups/prometheus-memory/qualidade-recall/20260804-023744/`.
+
 ## [0.3.0-dev] — 2026-08-03
 
 ### GIT GATE (Regra 20 — fluxo de confirmação)
