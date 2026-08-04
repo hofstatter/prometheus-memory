@@ -2,6 +2,9 @@
 
 ## [0.3.0-dev] — 2026-08-03
 
+### Planejamento — MCP Multi-Usuário Remoto
+- 🌐 `docs/PLAN_MCP_MULTI_USUARIO_REMOTO.md` criado (aprovado Herbert): DEV remoto (outra cidade/país) conecta o harness ao Prometheus via **servidor MCP SSE** (`pm_mcp.py` :8778, 8 tools com escopo write-only do próprio usuário), auth por **token por dev** (`users_registry.py`, hash SHA-256, revogável), rede **Tailscale** (VPS+TLS na escala), bridge stdio `mcp-remote` p/ harnesses sem SSE, coluna `author_id` nos eventos. Fases M0-M3 (~10-13h).
+
 ### Implementado — Canvas v2 por projeto
 
 - 🧭 **`scripts/canvas_generator.py`** (novo): Mermaid **multi-projeto** (`flowchart TD` + `subgraph` por `project_slug`) — nós por evento (`event_type`/`status_hint` → classes done/doing/blocked/backlog, máx 5/projeto), arestas pontilhadas entre projetos pelo mesmo agente, sanitização de títulos, **fallback v1** (`memory_aggregator.generate_mermaid_canvas`) quando sem eventos, `mode_of()` (projects/legacy), `_WEB_CANDIDATES` p/ repo/prod/cron.
