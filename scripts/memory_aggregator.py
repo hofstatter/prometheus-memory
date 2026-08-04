@@ -172,7 +172,8 @@ if __name__ == "__main__":
     fresh = [m for m in memories if m.get("id") not in seen]
     print(f"  {len(memories)} recentes, {len(fresh)} novas (watermark)")
     if not fresh:
-        canvas = generate_mermaid_canvas()
+        from canvas_generator import main as gen_canvas
+        canvas = gen_canvas()
         msg = f"[{ts}] 0 cenas novas (tudo ja processado), canvas atualizado."
         print(msg)
         with open(log_path, "a") as f:
@@ -192,7 +193,8 @@ if __name__ == "__main__":
     state["last_run"] = ts
     save_state(state)
 
-    canvas = generate_mermaid_canvas()
+    from canvas_generator import main as gen_canvas
+    canvas = gen_canvas()
     print(f"  Canvas Mermaid gerado ({len(canvas)} chars)")
 
     msg = f"[{ts}] {total_scenes} cenas criadas de {len(groups)} projetos, canvas atualizado."

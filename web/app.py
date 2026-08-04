@@ -204,7 +204,20 @@ def canvas():
                 total = line.split(":")[1].strip()
         mmd = f"stateDiagram-v2\n    [*] --> Mnemosyne\n    note right of Mnemosyne: {total} memorias\n    Mnemosyne --> [*]"
         age = "canvas ainda não gerado"
-    return jsonify({"mermaid": mmd, "age": age})
+    _scripts_cand = [SRC_DIR / "scripts", SRC_DIR.parent / "scripts"]
+    for _sc in _scripts_cand:
+        if _sc.exists() and str(_sc) not in sys.path:
+            sys.path.insert(0, str(_sc))
+    from canvas_generator import mode_of
+    return jsonify({"mermaid": mmd, "age": age, "mode": mode_of(mmd)})
+
+@app.route("/api/canvas/projects")
+def canvas_projects():
+    from projects_registry import list_projects
+    try:
+        return jsonify({"projects": list_projects()})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "projects": []})
 
 # ─── API: Canvas node detail ──────────────────────
 
