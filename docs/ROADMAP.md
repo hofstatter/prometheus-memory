@@ -4,7 +4,7 @@
 > 📋 **Plano da Aba Projetos + Multi-Sessão/Multi-Harness:** ver `docs/PLAN_PROJETOS_MULTI_SESSAO.md` (criado 03/08/2026 — fases A0→D; A0 identidade/sessões é pré-requisito da aba).
 > 📋 **Execução da Fase A0 (arquivo-a-arquivo):** ver `docs/PLAN_FASE_A0_EXECUCAO.md` (criado 03/08/2026 — lanes, `/api/pm/*`, Project Resolver v1, testes T1-T7, pronto para sessão Pedreiro).
 > 🚀 **v0.2.0-projetos (03/08/2026):** fases A0/A/A2/A3/B/C executadas (ver CHANGELOG) — aba Projetos (kanban/timeline/presença), Conexões & Custos, Stack & Runtime, Skills por projeto, Mem0 parity essencial. Docs em 4 idiomas. Release no GitHub.
-> 📋 **Canvas v2 por projeto:** ver `docs/PLAN_CANVAS_V2_POR_PROJETO.md` (criado 03/08/2026 — subgraphs por `project_slug`, fallback v1, chips/legenda/detalhe/cross-link; aprovado Herbert).
+> 📋 **Canvas v2 por projeto:** ver `docs/PLAN_CANVAS_V2_POR_PROJETO.md` (criado 03/08/2026 — subgraphs por `project_slug`, fallback v1, chips/legenda/detalhe/cross-link; aprovado Herbert). ✅ **Executado 03/08** (ver CHANGELOG).
 
 ## v0.1.0 (atual) ✅
 Pipeline L0→L3 · Web UI 5 abas + editor · RAG multimodal + OCR · Notes · Offloading · Skills · Hardening pré-release

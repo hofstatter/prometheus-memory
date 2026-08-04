@@ -2,6 +2,16 @@
 
 ## [0.3.0-dev] — 2026-08-03
 
+### Implementado — Canvas v2 por projeto
+
+- 🧭 **`scripts/canvas_generator.py`** (novo): Mermaid **multi-projeto** (`flowchart TD` + `subgraph` por `project_slug`) — nós por evento (`event_type`/`status_hint` → classes done/doing/blocked/backlog, máx 5/projeto), arestas pontilhadas entre projetos pelo mesmo agente, sanitização de títulos, **fallback v1** (`memory_aggregator.generate_mermaid_canvas`) quando sem eventos, `mode_of()` (projects/legacy), `_WEB_CANDIDATES` p/ repo/prod/cron.
+- 🌐 **API**: `/api/canvas` adiciona `mode` (backward compat `{mermaid, age}`) + novo `GET /api/canvas/projects` (boards com progresso).
+- 🖥️ **UI**: `web/static/canvas.js` (novo) + `index.html` — **chips de projeto** (nome + % + "Todos"), **legenda** done/doing/blocked/backlog, **highlight de subgraph** (dim 0.15), **cross-link** "🗂️ ver painel do projeto" (nó → aba Projetos com projeto selecionado); zoom mantido; `data-*`+delegação; `escapeHtml`.
+- 🔌 **Hook** no `memory_aggregator.py` (2 pontos → `canvas_generator.main()`); v1 preservado como fallback.
+- 🔍 **Revisão Inspetor: APROVADO** (62 testes) — 4 fixes: id único de nó (`_sid[:8]`), comentários de path, match bidirecional de label (truncamento 30 chars), teste de integração T5 do `/api/canvas`.
+- ✅ **Testes**: `tests/test_canvas_generator.py` T1-T5 — **62 passed, 1 skip**. Smoke: 2 projetos → subgraphs EVSCAR/PROVADOR renderizados no navegador com chips+legenda.
+- 🚀 **Produção sincronizada** (`app.py`, `index.html`, `canvas.js`, `canvas_generator.py` → `web/scripts` + `~/bin`) + `prometheus-web` reiniciado (health 200). Produção em `mode: legacy` (fallback v1) até eventos reais.
+
 ### Planejamento
 - 📋 `docs/PLAN_CANVAS_V2_POR_PROJETO.md` criado: **Canvas v2 por projeto** — `scripts/canvas_generator.py` (subgraphs por `project_slug` via `flowchart TD`, fallback v1), `/api/canvas` com `mode`, `/api/canvas/projects`, `static/canvas.js` (chips/legenda/detalhe/cross-link para a aba Projetos), hook no aggregator, testes T1-T4. Aprovado por Herbert — aguarda sessão Pedreiro.
 

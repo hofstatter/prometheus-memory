@@ -157,6 +157,7 @@
             <button onclick="canvasZoom=1;applyCanvasZoom()" class="btn-inactive" style="padding:4px 10px;font-size:13px">↺</button>
           </div>
         </div>
+        <div id="canvas-chips" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"></div>
         <div style="background:radial-gradient(ellipse at 50% 30%,#12121f 0%,#0a0a12 65%,#07070e 100%);border:1px solid var(--hairline);border-radius:var(--radius-lg);padding:32px 24px;overflow:hidden">
           <div id="canvas-zoom-wrapper" style="transform:scale(1);transform-origin:top left;transition:transform 0.25s var(--ease-out);min-height:200px">
             <div id="mermaid-render" class="flex justify-center"></div>
@@ -633,6 +634,7 @@ async function renderCanvas(){
     const id='mmd-'+Date.now();
     const {svg}=await mermaid.render(id, d.mermaid);
     el.innerHTML=svg;
+    if(window.setupCanvasExtras)setupCanvasExtras(d);
     document.querySelectorAll('#mermaid-render .node').forEach(n=>{n.style.cursor='pointer';n.onclick=function(e){handleCanvasClick(e)}});
     age.textContent=d.age||'';
     const wrapper=document.getElementById('canvas-zoom-wrapper');
@@ -1097,5 +1099,6 @@ function togglePhysics(){
 })();
 </script>
 <script src="/static/projects.js?v=2"></script>
+<script src="/static/canvas.js?v=1"></script>
 </body>
 </html>
