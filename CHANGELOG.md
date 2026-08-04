@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.0-dev] — 2026-08-03
+
+### Planejamento
+- 📋 `docs/PLAN_CANVAS_V2_POR_PROJETO.md` criado: **Canvas v2 por projeto** — `scripts/canvas_generator.py` (subgraphs por `project_slug` via `flowchart TD`, fallback v1), `/api/canvas` com `mode`, `/api/canvas/projects`, `static/canvas.js` (chips/legenda/detalhe/cross-link para a aba Projetos), hook no aggregator, testes T1-T4. Aprovado por Herbert — aguarda sessão Pedreiro.
+
 ## [0.2.0-dev] — 2026-08-03
 
 ### Ativado — Mem0 na produção (03/08)
