@@ -197,11 +197,12 @@ def _run(args, subset: list, db_path: Path) -> int:
     _prepare_eval_db(db_path)
 
     results = []
+    actual_mode = "llm" if (available() and not args.local_only) else "local-only"
     for n, inst in enumerate(subset, start=1):
         try:
             _ingest(inst)
             mems = _recall(inst)
-            if args.local_only or not available():
+            if actual_mode == "local-only":
                 # fallback sem LLM: acerta se a resposta de referência tem overlap
                 # alto com alguma memória recuperada (proxy de recall)
                 hit = False
@@ -227,17 +228,19 @@ def _run(args, subset: list, db_path: Path) -> int:
         print("Nenhum resultado. Dataset completo disponível?")
         return 1
 
+    import llm_backend
     total = sum(r["label"] for r in results) / len(results)
     by_type: dict = {}
     for r in results:
         by_type.setdefault(r["type"], []).append(r["label"])
     lines = ["# Report LongMemEval (subset EN oficial)", "",
-             f"- Data: 04/08/2026 · instâncias: {len(results)} · mode: {'local-only' if args.local_only else 'LLM judge'}",
+             f"- Data: 04/08/2026 · instâncias: {len(results)} · mode: **{actual_mode}**"
+             f" · backend: {llm_backend.describe()}",
              f"- **QA accuracy total: {total:.1%}**", "", "| Tipo | n | Accuracy |", "|---|---|---|"]
     for t, labels in sorted(by_type.items(), key=lambda kv: -sum(kv[1]) / len(kv[0])):
         lines.append(f"| {t} | {len(labels)} | {sum(labels) / len(labels):.1%} |")
     REPORT.write_text("\n".join(lines) + "\n")
-    print(f"\nQA accuracy total: {total:.1%} → {REPORT}")
+    print(f"\nQA accuracy total: {total:.1%} (mode={actual_mode}) → {REPORT}")
     return 0
 
 

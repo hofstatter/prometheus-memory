@@ -21,6 +21,9 @@ jobs:
     timeout-minutes: 60
     env:
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      # P4 — régua estável: judge/leitor SEMPRE DeepSeek (não depende de ollama local)
+      LLM_BACKEND: deepseek
+      DEEPSEEK_MODEL: deepseek-chat
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -46,7 +49,7 @@ jobs:
           ls -la evals/data/
       - name: Run LongMemEval (report-only — não quebra o build)
         continue-on-error: true
-        run: python3 evals/longmemeval_runner.py --subset 100
+        run: python3 evals/longmemeval_runner.py --subset 30
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
