@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.3.0-dev] — 2026-08-04 (Parte 4 — Régua do LongMemEval honesta)
+
+### Implementado — consertos reais (não experimentos)
+
+- 🎯 **Runner reporta o mode REAL** (`evals/longmemeval_runner.py`): antes dizia
+  "LLM judge" mas, com `LLM_BACKEND` default `ollama` (desligado na NB02), `available()`
+  era False → rodava **proxy de overlap** silenciosamente. Agora o relatório grava
+  `mode: llm|local-only` + `backend: describe()` e o console mostra o mode no total.
+  **Baseline real medido: 42.1% QA (judge DeepSeek)** — o "36.8%" da tarde era proxy.
+- ⚙️ **CI com régua pinada** (`.github/workflows/eval.yml`): `LLM_BACKEND=deepseek` +
+  `DEEPSEEK_MODEL=deepseek-chat` (não depende de ollama local) + `--subset 30`
+  (antes 100 estourava os 60min e cancelava).
+
+### Experimentos avaliados e REJEITADOS (medidos com judge real, revertidos)
+
+- ❌ **Expansão da pergunta por IA** (paráfrases antes do recall): 42.1% → **31.6%**
+  (-10.5pp) — perguntas EN já otimamente formuladas; paráfrases afastam e o merge
+  traz ruído. Código revertido (`web/memory.py`).
+- ❌ **Embedding BAAI/bge-large-en-v1.5**: 42.1% → **26.3%** (-15.8pp) — modelos BGE
+  exigem prefixo de instrução de retrieval que o mnemosyne upstream não adiciona.
+  Stella 1.5B fora do catálogo do fastembed. Env revertido.
+- 📌 Detalhes: `evals/reports/p4-ruler-e-experimentos.md` + `docs/DECISIONS.md`.
+
 ## [0.3.0-dev] — 2026-08-04 (Parte 2 — Qualidade do Recall P2)
 
 ### Implementado — NER v1.2 (Aliases/Canonização)
