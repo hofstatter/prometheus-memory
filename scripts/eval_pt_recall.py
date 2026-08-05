@@ -102,20 +102,10 @@ CASOS = [
 
 
 def _prepare_db(db_path: Path) -> None:
-    """Mesmo contorno de FK do runner LongMemEval (bug upstream)."""
+    """DB de eval isolado — schema completo do mnemosyne 3.15.1 (FK corrigida
+    upstream #452; sem hack de drop/recreate de memory_embeddings)."""
     from mnemosyne.mcp_tools import Mnemosyne
     Mnemosyne(session_id="_init", db_path=str(db_path), bank="default", channel_id="_init")
-    import sqlite3
-    con = sqlite3.connect(str(db_path))
-    con.execute("PRAGMA foreign_keys=OFF")
-    con.execute("DROP TABLE IF EXISTS memory_embeddings")
-    con.execute("""CREATE TABLE memory_embeddings (
-        memory_id TEXT PRIMARY KEY,
-        embedding_json TEXT NOT NULL,
-        model TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
-    con.commit()
-    con.close()
 
 
 def _run() -> dict:

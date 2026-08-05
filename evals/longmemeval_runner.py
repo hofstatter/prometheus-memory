@@ -131,26 +131,12 @@ def _judge(inst: dict, hypothesis: str) -> int | None:
 
 
 def _prepare_eval_db(db_path: Path) -> None:
-    """Isola o DB do eval e contorna o bug upstream do Mnemosyne.
-
-    mnemosyne/core/memory.py cria memory_embeddings COM FK→memories (episódica),
-    mas o BEAM grava embeddings de working_memory na mesma tabela → em DB fresco
-    o INSERT falha com FOREIGN KEY. Reconstruímos a tabela sem a FK (idempotente).
+    """Isola o DB do eval (schema completo). O bug de FK do `memory_embeddings`
+    foi corrigido no upstream (#452, mnemosyne 3.15.1) — não há mais hack.
     """
     from mnemosyne.mcp_tools import Mnemosyne
     Mnemosyne(session_id="_init", db_path=str(db_path), bank="default",
               channel_id="_init")  # dispara init completo do schema
-    import sqlite3
-    con = sqlite3.connect(str(db_path))
-    con.execute("PRAGMA foreign_keys=OFF")
-    con.execute("DROP TABLE IF EXISTS memory_embeddings")
-    con.execute("""CREATE TABLE memory_embeddings (
-        memory_id TEXT PRIMARY KEY,
-        embedding_json TEXT NOT NULL,
-        model TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
-    con.commit()
-    con.close()
 
 
 def _select_subset(data: list, n: int, seed: int = 42) -> list:
