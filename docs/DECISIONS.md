@@ -5,7 +5,42 @@ plano. Seção nova no topo. Cada entrada: contexto, decisão, evidência, statu
 
 ---
 
-## 04/08/2026 — P4 (melhorar recall EN): régua consertada; as 2 "melhorias" de retrieval REJEITADAS
+## 04/08/2026 — P5 (embedding multilíngue): e5-large REJEITADO — gate lexical upstream domina; regressão EN -10.6pp
+
+**Contexto:** Herbert escolheu `intfloat/multilingual-e5-large` (~560M, 1024d, 100+ idiomas)
+para substituir o `bge-small-en-v1.5` (só EN) e dar suporte multilíngue real ao projeto
+público. Spikes medidos com régua PT nova (`scripts/eval_pt_recall.py`, 22-32 pares reais
+do ecossistema) + regressão EN (LongMemEval subset-20, judge real, MESMA sessão).
+
+**Evidência (mesma sessão, DB de eval isolado):**
+
+| Métrica | bge-small | e5-large | Δ |
+|---|---|---|---|
+| PT hit@5 (gate lexical real) | 54.5% | 54.5% | 0.0pp |
+| PT hit@5 (gate relaxado — isola embedding) | 43.8% | 46.9% | +3.1pp |
+| EN LongMemEval QA (judge real) | 47.4% | 36.8% | **-10.6pp** ❌ |
+| Latência PT (p50, i7) | 8ms | 42ms | ~5x |
+
+**Descoberta central:** o **gate lexical upstream** (`beam.py _lexical_relevance`,
+hardcoded, sem knob env) zera candidatos sem overlap de tokens ANTES de o vetor
+decidir — o recall atual é dominado por FTS5 lexical + gate, não pelo embedding.
+Mesmo relaxando o gate em runtime (monkeypatch no harness, sem tocar site-packages),
+o ganho PT do e5-large é só +3.1pp, e o EN regride -10.6pp.
+
+**Decisão:** **e5-large REJEITADO para migração.** Manter `bge-small-en-v1.5`. Nenhuma
+mudança em produção. mpnet-base e jina-v3 nem foram testados (o melhor da família já
+reprovou o critério). Stella/bge-m3 continuam fora do fastembed (verificado).
+
+**Lições:** (a) melhorar recall exige atacar o gate lexical upstream (knob
+`MNEMOSYNE_LEXICAL_GATE_MIN`) e/ou reranker/granularidade de ingest — não a troca de
+embedding; (b) drift de judge persistente (47.4%→42.1%→47.4% no mesmo subset) reforça a
+regra de comparar só na mesma sessão; (c) a régua PT nova fica no repo como asset
+contínuo.
+
+**Status:** fechada — candidato rejeitado; plano P5 arquivado com reservas documentadas.
+
+---
+
 
 **Contexto:** com a régua honesta (abaixo), medimos 2 melhorias candidatas no subset-20
 com judge real DeepSeek (deepseek-chat, temp 0), mesma sessão.
