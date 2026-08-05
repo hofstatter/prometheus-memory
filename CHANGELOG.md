@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0-dev] — 2026-08-04 (Parte 5 — Régua PT + spike e5-large: rejeitado)
+
+### Implementado — asset contínuo
+
+- 📏 **Régua PT de recall** (`scripts/eval_pt_recall.py`): hit@5 com 32 pares
+  pergunta→memória reais do ecossistema (PT-BR), DB de eval isolado, mesma sessão;
+  opção `P5_BYPASS_LEXICAL=1` para isolar o efeito do embedding (monkeypatch em
+  runtime, sem tocar site-packages). Sem régua PT o benefício real (produção é PT)
+  não era mensurável.
+
+### Experimentos avaliados e REJEITADOS
+
+- ❌ **Embedding `intfloat/multilingual-e5-large`** (~560M, 1024d): PT hit@5 **+3.1pp**
+  (isolando o embedding) mas regressão EN **-10.6pp** (mesma sessão, judge real,
+  47.4%→36.8%) e latência ~5x. **Não migra** — bge-small-en-v1.5 mantido.
+- 🔎 **Descoberta:** o recall é dominado pelo **gate lexical upstream**
+  (`beam.py _lexical_relevance`, hardcoded, sem knob) — candidatos sem overlap de
+  tokens morrem antes do vetor decidir. Melhorar recall = knob upstream
+  (`MNEMOSYNE_LEXICAL_GATE_MIN`), reranker ou granularidade — não troca de embedding.
+- 📌 Detalhes: `evals/reports/p5-e5-large.md` + `docs/DECISIONS.md`.
+
 ## [0.3.0-dev] — 2026-08-04 (Parte 4 — Régua do LongMemEval honesta)
 
 ### Implementado — consertos reais (não experimentos)
