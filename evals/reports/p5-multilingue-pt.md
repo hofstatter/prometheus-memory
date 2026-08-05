@@ -21,3 +21,9 @@
 
 - 2026-08-04 21:12 — - model: `intfloat/multilingual-e5-large` · **hit@32 = 15/32 (46.9%)** · latência p50 42ms · máx 47ms
   - acertos: 15/32
+
+- 2026-08-05 04:40 — - model: `BAAI/bge-small-en-v1.5 (default)` · **hit@32 = 14/32 (43.8%)** · latência p50 8ms · máx 20ms
+  - acertos: 14/32
+
+- 2026-08-05 15:15 — - model: `BAAI/bge-small-en-v1.5 (default)` · **hit@32 = 14/32 (43.8%)** · latência p50 14ms · máx 29ms
+  - acertos: 14/32
