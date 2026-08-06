@@ -44,7 +44,7 @@ L0→L3 流水线会自动整合一切 —— 每 6 小时事实汇集成场景�
 ## 功能特性
 
 - 🔍 **层级时间线** — L3→L2→L1 逐层钻取，侧边栏含项目/日期/统计
-- 🕸️ **知识图谱** — G6.js d3-force 布局，Obsidian 风格：发光效果、悬停激活、点击查看详情
+- 🕸️ **知识图谱** — G6.js d3-force 布局，Obsidian 风格：发光效果、悬停激活、点击查看详情；**真实边**（`ctx`、`references`、`mentions`、`executou`）基于**纯 Python 的 PageRank + 度中心性**，密集模式自动折叠为核心枢纽子图
 - 📐 **Mermaid 画布** — 自动生成的智能体状态图，支持缩放、点击查看卸载内容；**v2：多项目**（每个项目一个子图，展示 Backlog→Doing→Done 事件流、项目芯片、图例和指向项目标签页的链接）
 - 📄 **多模态本地 RAG** — 上传 PDF、TXT、MD、DOCX、PNG、JPG，自动 OCR（Tesseract），向量检索
 - 📝 **智能笔记** — 通过 URL 导入（GitHub、X/Twitter、网站），自动清洗并自带 Markdown 渲染器
@@ -266,3 +266,14 @@ prometheus-skills list
 ## Google Antigravity 与 VSCode
 
 两者均支持 MCP（SSE + Bearer）——配置块见主 README 的集成部分。
+
+## 🕸️ 知识图谱 — 真实边
+
+图谱标签页（`/api/graph`）渲染从 Mnemosyne 存储中提取的**真实知识图谱**——而非人工投影：
+
+- **真实边类型**：`ctx`（gist↔记忆上下文）、`references`（共享实体提及）、`mentions`（记忆↔实体）、`executou`（三元组关系）——带实时彩色图例
+- **分析指标**：**纯 Python 实现的 PageRank + 度中心性**（零新增依赖），按节点暴露并用于枢纽排名
+- **密集模式**：小图使用圆形布局并常显标签；大网络自动折叠为**枢纽 + 实体子图**，保证结构可读
+- **召回增强**：召回负载包含 `graph_degree`——关联记忆与语义得分一起呈现
+
+![知识图谱](../SCREENSHOTS/graph.png)

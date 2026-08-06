@@ -135,51 +135,23 @@ def timeline():
 
 # ─── API: Graph ────────────────────────────────────
 
-def _clean_text(t: str) -> str:
-    import re
-    t = re.sub(r"<think>.*?</think>", "", t, flags=re.DOTALL)
-    t = re.sub(r"<think>.*$", "", t, flags=re.DOTALL)
-    t = re.sub(r"</?think>", "", t)
-    return t.strip()
-
-
 @app.route("/api/graph")
 def graph():
-    raw = run_mnemosyne("recall", "cena fato", "50")
-    memories = parse_mnemosyne_output(raw)
-    for m in memories:
-        m["content"] = _clean_text(m.get("content", ""))
-    if not memories:
-        stats_raw = run_mnemosyne("stats")
-        total = str(len(memories))
-        return jsonify({"nodes": [
-            {"id": "mnemosyne", "label": f"Mnemosyne ({total} memórias)", "tier": "L3", "color": "#22c55e", "project": "system"}
-        ], "edges": []})
-    nodes, edges = [], []
-    node_ids, edge_ids = set(), set()
-    for m in memories:
-        mid = m["id"]
-        proj = extract_project(m.get("content", ""))
-        if mid not in node_ids:
-            node_ids.add(mid)
-            is_persona = "persona" in m.get("content", "").lower()
-            is_scene = "cena" in m.get("content", "").lower()
-            tier = "L3" if is_persona else ("L2" if is_scene else "L1")
-            color = {"L3": "#22c55e", "L2": "#3b82f6", "L1": "#94a3b8"}.get(tier, "#94a3b8")
-            label_text = m["content"][:60]
-            if len(m["content"]) > 60:
-                label_text += "..."
-            nodes.append({
-                "id": mid, "label": label_text,
-                "tier": tier, "color": color, "project": proj
-            })
-        for other in memories:
-            if other["id"] != mid and extract_project(other.get("content", "")) == proj:
-                eid = f"{min(mid, other['id'])}-{max(mid, other['id'])}"
-                if eid not in edge_ids:
-                    edge_ids.add(eid)
-                    edges.append({"source": mid, "target": other["id"]})
-    return jsonify({"nodes": nodes, "edges": edges[:100]})
+    """Grafo real: graph_edges + triples + analytics (degree/PageRank).
+
+    F1 · PLAN_SEMANTICA_GRAFO_F1 — delega ao graph_service (leitura SQLite
+    read-only, Python puro). Params: ?limit= (10..500), ?entities=0/1.
+    """
+    from graph_service import fetch_graph
+    try:
+        limit = min(max(int(request.args.get("limit", 250)), 10), 500)
+    except (TypeError, ValueError):
+        limit = 250
+    include_entities = request.args.get("entities", "1") != "0"
+    try:
+        return jsonify(fetch_graph(limit=limit, include_entities=include_entities))
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "nodes": [], "edges": [], "analytics": {}}), 500
 
 # ─── API: Canvas ───────────────────────────────────
 
@@ -466,8 +438,16 @@ def memory_recall():
                 results = apply_threshold(results, float(threshold))
             except (TypeError, ValueError):
                 pass
+        try:
+            from graph_service import degree_by_memory
+            _degrees = degree_by_memory()
+        except Exception:
+            _degrees = {}
+        for r in results:
+            r["graph_degree"] = _degrees.get(str(r.get("id")), 0)
         return jsonify({"count": len(results), "agent_id": data.get("agent_id", "default"),
-                        "results": [{"id": r.get("id"), "content": r.get("content"), "score": r.get("score")} for r in results]})
+                        "results": [{"id": r.get("id"), "content": r.get("content"), "score": r.get("score"),
+                                     "graph_degree": r.get("graph_degree", 0)} for r in results]})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
 

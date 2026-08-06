@@ -10,3 +10,5 @@ venv/
 .DS_Store
 node_modules/
 evals/data/
+# artefatos de diagnostico gerados (D7)
+web/mnemosyne-doctor.*

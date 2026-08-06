@@ -47,7 +47,7 @@ literally **gets smarter with every cycle**, with zero human intervention.
 ## Features
 
 - 🔍 **Hierarchical Timeline** — L3→L2→L1 drill-down, sidebar with projects/dates/stats
-- 🕸️ **Knowledge Graph** — G6.js d3-force, Obsidian-style: glow, hover-activate, click → details
+- 🕸️ **Knowledge Graph** — G6.js d3-force, Obsidian-style: glow, hover-activate, click → details; **real edges** (`ctx`, `references`, `mentions`, `executou`) with **PageRank + degree centrality** in pure Python, dense-mode collapse to hub subgraph
 - 📐 **Mermaid Canvas** — auto-generated agent state diagram, zoom, click → offloaded content; **v2: multi-project subgraphs** (one block per project with event flow Backlog→Doing→Done, project chips, legend, cross-link to the Projects tab)
 - 📄 **Multimodal local RAG** — upload PDF, TXT, MD, DOCX, PNG, JPG with automatic OCR (Tesseract), **vector search via sqlite-vec KNN (vec0)** over fastembed 384d float32
 - 📝 **Notes** — URL import (GitHub, X/Twitter, websites) with sanitization and custom Markdown renderer
@@ -178,6 +178,22 @@ All options are environment variables — see [.env.example](.env.example):
 | **L3** Persona | `scripts/persona_synthesizer.py` | Weekly cron | `persona.md` + L3 facts |
 | **Skills** | `scripts/skill_generator.py` | Weekly (with L3) | Skills in `~/.opencode/skills/generated/` |
 | **Offloading** | `scripts/ref_manager.py` | On demand | `refs/*.md` with node_id |
+
+## 🕸️ Knowledge Graph — Real Edges
+
+The Graph tab (`/api/graph`) renders the **actual knowledge graph** extracted from
+your Mnemosyne store — not an artificial projection:
+
+- **Real edge types**: `ctx` (gist↔memory context), `references` (shared entity mentions),
+  `mentions` (memory↔entity), `executou` (triple relations) — color-coded with a live legend
+- **Analytics**: **PageRank + degree centrality** computed in pure Python (no new dependencies),
+  exposed per node and used for hub ranking
+- **Dense-mode collapse**: small graphs use a circular layout with permanent labels; large
+  networks collapse to the **hub + entity subgraph** so the structure stays readable (see below)
+- **Recall boost**: memory recall payloads include `graph_degree` — connected memories are
+  surfaced alongside semantic scores
+
+![Knowledge Graph](docs/SCREENSHOTS/graph.png)
 
 ## Screenshots
 
