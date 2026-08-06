@@ -5,6 +5,93 @@ plano. Seção nova no topo. Cada entrada: contexto, decisão, evidência, statu
 
 ---
 
+## 06/08/2026 — Sessão 44: D6 roteamento visual · D7 doctor.* fora do repo · D8 cascata de consulta externa
+
+**Contexto (sessão 44, pré-commit público F1/F1.1):** Herbert aprovou (1) commit do F1/F1.1 no
+`prometheus-memory` + docs em 4 idiomas + screenshot de amostra, (2) regra explícita de roteamento
+de captura de tela, (3) política de uso para os MCPs pagos/limitados (Tavily free 1K req/mês;
+Firecrawl free 1.278 créditos restantes, renova 1.000 em 22/08/2026).
+
+- **D6 — Roteamento de captura (visual):** `localhost/privado → Playwright` (roda no Chromium local,
+  autentica e interage); `URL pública → ScreenshotAPI` ($9/mês, render externo não enxerga localhost;
+  sempre `enable_caching=true`). Registrado em `visionario.md` + GUARDRAILS + FLUXO_BIMODELO.
+- **D7 — Artefatos gerados fora do repo:** `web/mnemosyne-doctor.{json,md}` são saída de diagnóstico,
+  não fonte → `.gitignore`, nunca versionar.
+- **D8 — Cascata de consulta externa (anti-custo):** 1) doc de lib → Context7 (grátis) ·
+  2) código real → gh_grep (grátis) · 3) pesquisa web/factual → Tavily (default, 1K req/mês) ·
+  4) ler URL específica → Firecrawl scrape · 5) mapear/crawlear site → Firecrawl map/crawl ·
+  6) screenshot localhost → Playwright · 7) screenshot público → ScreenshotAPI. **Regras duras:**
+  nunca Tavily+Firecrawl na mesma query (fallback, nunca paralelo); nunca buscar pago se
+  Context7/gh_grep resolvem; `firecrawl_search` só como fallback ou com `scrape_results=true`.
+
+**Status:** fechadas — aplicadas na sessão 44 (docs de config do ecossistema + este repo).
+
+---
+
+## 06/08/2026 — F1.1: Visionário = glm-4.5v (não existe "glm-4.7v"); backfill 769 edges; visual colapsa p/ hubs
+
+**Contexto:** aprovado (1) glm-4.5v como Visionário, (2) melhorias visuais F1.1 e (3) enriquecer/migrar
+dados existentes para o grafo real. Achados de medição mudaram o curso:
+
+- **"GLM-4.7V" NÃO existe no Z.AI Coding Plan.** Testes diretos na API (`api.z.ai/api/coding/paas/v4`):
+  `glm-4.7` aceita só `text` (rejeita `image_url`, HTTP 400); `glm-4.7v` → `Unknown Model`;
+  **`glm-4.5v` → aceita imagem** (validado 3×). `glm-4.6v` timeout (inconclusivo). O registry do
+  opencode não lista 4.5v → **declarado no `opencode.jsonc`** (`provider.zai-coding-plan.models.glm-4.5v`
+  com `attachment: true` — schema confirma o shape). `visionario.md` → `model: zai-coding-plan/glm-4.5v`.
+- **Backfill (migração) escreve em `graph_edges`:** script `scripts/backfill_graph_edges.py` —
+  M1 gists→`ctx` (339) · M2 mentions compartilhadas (conf≥0.8, grupos ≥2) → `references` (417) ·
+  M3 `prometheus_memory_entities` → `mentions` (13). Total **769 edges** (de 10). Idempotente,
+  endpoints validados, backup do DB pré-apply, `mnemosyne doctor` critical=0/error=0.
+- **Visual:** ≤40 nós → `circular` (G6) com labels; **>40 nós → colapsa para o subgrafo de
+  hubs+entidades** (fitView comprimia 232 nós para zoom ~0.03 = ilegível; zoom fixo 0.65-0.75).
+  Nota do glm-4.5v: 2/10 (hairball, sem labels) → **7/10 APROVADO** após o colapso.
+
+**Decisões:** D1 glm-4.5v (validado) · D2 switch de layout por tamanho com colapso p/ hubs ·
+D3 backfill idempotente com dedup pré-existente + intra-batch + reverso (fix Inspetor) ·
+D4 mentions com conf≥0.8 + normalização anti-ruído · D5 entidades por nome (casa com triples).
+
+**Evidência (06/08):** prod live `/api/graph?limit=500` → **232 nós / 501 arestas** (23ms) ·
+`graph_edges` pós-apply 769 (0 duplicatas, 0 self-loops) · doctor 0 erros · Inspetor APROVOU a
+migração (1 fix LOW aplicado: dedup reverso undirected) · Playwright v7 + glm-4.5v 7/10.
+**Backups:** `semantica-graph-f1_1/20260806-035946/` (config+index.html+docs) ·
+`f1_1-graphservice-memoria/20260806-040209/` · `semantica-graph-f1_1/20260806-040245/mnemosyne-pre-backfill.db`.
+
+**Status:** fechada — F1.1 aceite CA1–CA9 verde; detalhe em `docs/PLAN_SEMANTICA_GRAFO_F1_1.md`.
+
+
+
+## 06/08/2026 — F1 Grafo real: adotar analytics puros do semantica; SEM boost extra no recall
+
+**Contexto:** varredura `semantica-agi/semantica` (MIT, "Palantir open-source") a pedido
+do Herbert para melhorar o Grafo :8777. Core do pacote inviável como dependência
+(pyproject puxa torch/spacy/faiss/opencv/librosa/umap → 3-5GB); módulos-alvo de grafo
+(centrality, community, link_pred, conflicts, decisions, temporal) são quase pure-Python.
+Gap no nosso lado: `/api/graph` era O(n²) fake (recall CLI + hub-spoke memória↔projeto,
+cap 100) e a UI G6 só orbitava projetos — ignorava `graph_edges`/`triples` reais.
+
+**Decisões (D1–D5, detalhe em `docs/PLAN_SEMANTICA_GRAFO_F1.md`):**
+- **D1 — SEM boost extra no recall:** o `graph_bonus` por grau **já roda upstream**
+  (mnemosyne beam.py:6250-6261, `min(edge_count*0.02, 0.08)`, knob `MNEMOSYNE_GRAPH_BONUS`).
+  F1 **expõe** `graph_degree` no payload do `/api/memory/recall` (visibilidade) sem alterar
+  scoring — evita dupla contagem.
+- **D2 — Grafo computado por request:** dados reais pequenos hoje (10 edges/347 gists);
+  PageRank+degree em Python puro é sub-ms. Cap `?limit=500`.
+- **D3 — Dois alvos:** repo canônico `~/Projetos/prometheus-memory/web/` + **cópia viva
+  `~/Projetos/web/`** (WorkingDirectory do systemd user `prometheus-web.service` — achado
+  crítico da sessão). Implementa no repo → sync por arquivo → restart; **.env nunca tocado**.
+- **D4 — Nada em site-packages/mnemosyne** (padrão PLAN_QUALIDADE_RECALL_P3).
+- **D5 — Analytics em Python puro:** `pagerank()` ~30 linhas adaptado de
+  `semantica/kg/centrality_calculator.py` (MIT, NOTICE no docstring). Zero deps novas.
+
+**Evidência (06/08):** `/api/graph` 3ms (repo/test client) e 10ms (prod :8777 com token),
+20 nós + **11 arestas reais** (10 `ctx` + 1 `executou`), degree+pagerank por nó, recall 200
+com `graph_degree`, UI com legenda de edge types + badge de contagens (Playwright snapshot
+na instância de teste 127.0.0.1:18777). Backups: `~/backups/herbert/semantica-graph-f1/20260806-031327/`.
+
+**Status:** fechada — F1 aceite CA1-CA8 verde (ver PLAN_SEMANTICA_GRAFO_F1.md §4).
+
+
+
 ## 04/08/2026 — P5 (embedding multilíngue): e5-large REJEITADO — gate lexical upstream domina; regressão EN -10.6pp
 
 **Contexto:** Herbert escolheu `intfloat/multilingual-e5-large` (~560M, 1024d, 100+ idiomas)

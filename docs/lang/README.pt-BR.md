@@ -47,7 +47,7 @@ literalmente **fica mais inteligente a cada ciclo**, sem intervenção humana.
 ## Features
 
 - 🔍 **Timeline hierárquica** — L3→L2→L1 com drill-down, sidebar de projetos/datas/stats
-- 🕸️ **Grafo de conhecimento** — G6.js d3-force estilo Obsidian: glow, hover-activate, clique → detalhes
+- 🕸️ **Grafo de conhecimento** — G6.js d3-force estilo Obsidian: glow, hover-activate, clique → detalhes; **arestas reais** (`ctx`, `references`, `mentions`, `executou`) com **PageRank + degree centrality** em Python puro e modo denso que colapsa para o subgrafo de hubs
 - 📐 **Mermaid Canvas** — diagrama de estado do agente gerado automaticamente, zoom, clique → conteúdo offloaded; **v2: multi-projeto** (um bloco por projeto com o fluxo de eventos Backlog→Doing→Done, chips de projeto, legenda e link para a aba Projetos)
 - 📄 **RAG local multimodal** — upload de PDF, TXT, MD, DOCX, PNG, JPG com OCR automático (Tesseract), busca vetorial
 - 📝 **Notes** — importação por URL (GitHub, X/Twitter, sites) com sanitização e renderizador Markdown próprio
@@ -281,6 +281,17 @@ O Prometheus foi feito para **reduzir gasto de tokens**, não só guardar memór
 ## Comparação
 
 Ver [COMPARISON.md](../../COMPARISON.md) — Mnemosyne vs MemPalace vs TencentDB vs Prometheus.
+
+## 🕸️ Grafo de conhecimento — arestas reais
+
+A aba Grafo (`/api/graph`) renderiza o **grafo de conhecimento real** extraído do seu store Mnemosyne — não uma projeção artificial:
+
+- **Tipos de aresta reais**: `ctx` (contexto gist↔memória), `references` (mentions de entidade compartilhadas), `mentions` (memória↔entidade), `executou` (relações de tripla) — com legenda colorida ao vivo
+- **Analytics**: **PageRank + degree centrality** em Python puro (sem dependências novas), expostos por nó e usados para ranquear hubs
+- **Modo denso**: grafos pequenos usam layout circular com labels permanentes; redes grandes colapsam para o **subgrafo de hubs + entidades** para a estrutura continuar legível
+- **Boost no recall**: o payload do recall inclui `graph_degree` — memórias conectadas aparecem junto com as pontuações semânticas
+
+![Grafo de conhecimento](../SCREENSHOTS/graph.png)
 
 ## Autor
 

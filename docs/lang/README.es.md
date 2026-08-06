@@ -9,7 +9,7 @@ Pipeline de **memoria jerárquica L0→L3** para agentes de IA — el segundo ce
 ## ¿Qué hace?
 
 - **Timeline jerárquica** L3→L2→L1 con proyectos, fechas y stats
-- **Grafo de conocimiento** animado estilo Obsidian (física continua)
+- **Grafo de conocimiento** animado estilo Obsidian (física continua); **aristas reales** (`ctx`, `references`, `mentions`, `executou`) con **PageRank + degree centrality** en Python puro y modo denso que colapsa al subgrafo de hubs
 - **Canvas Mermaid** auto-generado del flujo del agente — **v2: multi-proyecto** (un bloque por proyecto con flujo Backlog→Doing→Done, chips, leyenda y enlace a la pestaña Proyectos)
 - **RAG multimodal** — PDF, TXT, MD, DOCX, imágenes con OCR
 - **Notes** — importa contenido de URLs (GitHub, X, sitios web) con sanitización
@@ -126,3 +126,14 @@ Incluida en el registry y en `skills/ai-company/`: 16 analistas sêniors que gu�
 ## Google Antigravity y VSCode
 
 Ambos soportan MCP (SSE + Bearer) — ver la sección de integraciones del README principal para los bloques de configuración listos.
+
+## 🕸️ Grafo de conocimiento — aristas reales
+
+La pestaña Grafo (`/api/graph`) renderiza el **grafo de conocimiento real** extraído de tu store Mnemosyne — no una proyección artificial:
+
+- **Tipos de arista reales**: `ctx` (contexto gist↔memoria), `references` (menciones de entidad compartidas), `mentions` (memoria↔entidad), `executou` (relaciones de tripla) — con leyenda de colores en vivo
+- **Analytics**: **PageRank + degree centrality** en Python puro (sin dependencias nuevas), expuestos por nodo y usados para rankear hubs
+- **Modo denso**: grafos pequeños usan layout circular con etiquetas permanentes; redes grandes colapsan al **subgrafo de hubs + entidades** para que la estructura siga siendo legible
+- **Boost en recall**: el payload del recall incluye `graph_degree` — las memorias conectadas aparecen junto con las puntuaciones semánticas
+
+![Grafo de conocimiento](../SCREENSHOTS/graph.png)
