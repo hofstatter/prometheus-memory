@@ -11,7 +11,8 @@
     tasks: [],
     presence: [],
     timer: null,
-    active: false
+    active: false,
+    personasWindow: 24
   };
 
   const esc = (s) => {
@@ -161,6 +162,7 @@
       <div id="pm-presence" style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:14px"></div>
 
       <div id="pm-personas" style="margin-bottom:18px"></div>
+      <div id="pm-daily" style="margin-bottom:18px"></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
         ${kpi('Eventos', events.length)}
@@ -170,6 +172,7 @@
       </div>
 
       <div id="pm-stack" style="margin-bottom:18px"></div>
+      <div id="pm-skill-suggestion" style="margin-bottom:12px"></div>
       <div id="pm-skills" style="margin-bottom:18px"></div>
       <div id="pm-connections" style="margin-bottom:18px"></div>
 
@@ -190,6 +193,7 @@
   loadPMSkills(slug);
   loadPMConnections(slug);
   loadPMPersonas(slug);
+  loadPMDaily();
   loadPMNotes(slug);
   loadPMTokens(slug);
   loadPMMcps(slug);
@@ -297,7 +301,7 @@
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">${typeChip(ev.event_type)}${ev.agent_id ? personaChip(ev.agent_id) : ''}</div>
       <h3 style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:8px">${esc(ev.title)}</h3>
-      ${ev.summary ? `<p style="font-size:13px;color:var(--ink-muted);line-height:1.5;white-space:pre-wrap;margin-bottom:12px">${esc(ev.summary)}</p>` : ''}
+      ${ev.summary ? `<p style="font-size:13px;color:var(--ink-muted);line-height:1.5;white-space:pre-wrap;margin-bottom:12px;max-height:260px;overflow-y:auto">${esc(ev.summary)}</p>` : ''}
       <div id="pm-drawer-memory" style="font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap"></div>
       <div style="border-top:1px solid var(--hairline);margin-top:12px;padding-top:10px;font-size:12px;color:var(--ink-muted);line-height:1.9">
         <div>Status: <b style="color:var(--ink)">${esc(ev.status_hint || '—')}</b></div>
@@ -326,16 +330,26 @@
     drawer.setAttribute('aria-hidden', 'true');
   }
 
-  // ── Personas (24h) — P5.3 ─────────────────────────────────────────
+  // ── Personas (P5.3, janela P5.8) ─────────────────────────────────
   function loadPMPersonas(slug){
     const el = document.getElementById('pm-personas');
     if(!el) return;
-    const q = slug ? '?window=24&project=' + encodeURIComponent(slug) : '?window=24';
+    const win = S.personasWindow || 24;
+    const q = slug ? '?window=' + win + '&project=' + encodeURIComponent(slug) : '?window=' + win;
     fetch('/api/pm/analytics/personas' + q).then(r => r.json()).then(d => {
       renderPersonas(el, d);
     }).catch(() => {
       el.innerHTML = '';
     });
+  }
+
+  function setPersonasWindow(h){
+    S.personasWindow = h;
+    const btns = document.querySelectorAll('[data-pm-win]');
+    btns.forEach(b => {
+      b.style.opacity = String(b.dataset.pmWin) === String(h) ? '1' : '.45';
+    });
+    loadPMPersonas(S.selected);
   }
 
   const PERSONA_LABEL = {
@@ -377,8 +391,14 @@
     el.innerHTML = `
       <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-          <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">📊 Personas (24h)</h3>
-          <span style="font-size:11px;color:var(--ink-muted)">${d.total_events || 0} eventos · janela ${d.window_hours}h · atualiza 5min</span>
+          <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">📊 Personas</h3>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--ink-muted)">${d.total_events || 0} eventos · atualiza 5min</span>
+            <div style="display:inline-flex;background:var(--surface-2);border:1px solid var(--hairline);border-radius:999px;padding:2px">
+              ${[['24','24h'],['168','7d'],['720','30d']].map(([v,l]) =>
+                `<button data-pm-win="${v}" onclick="setPersonasWindow(${v})" style="background:none;border:none;color:var(--ink);font-size:11px;cursor:pointer;padding:2px 9px;border-radius:999px;opacity:${S.personasWindow === Number(v) ? '1' : '.45'}">${l}</button>`).join('')}
+            </div>
+          </div>
         </div>
         ${bars}
         <details style="margin-top:10px">
@@ -388,7 +408,50 @@
       </div>`;
   }
 
-  // ── Stack & Runtime (Fase A3) ──────────────────────────────────────
+  // ── Relatório diário por persona (P5.7) ────────────────────────────
+  function loadPMDaily(){
+    const el = document.getElementById('pm-daily');
+    if(!el) return;
+    fetch('/api/pm/analytics/daily').then(r => r.json()).then(d => {
+      renderDaily(el, d);
+    }).catch(() => { el.innerHTML = ''; });
+  }
+
+  function renderDaily(el, d){
+    const list = d.personas || [];
+    if(!d.total_events && !list.length){ el.innerHTML = ''; return; }
+    const bars = list.slice().sort((a,b)=>b.total-a.total).map(p => {
+      const c = PERSONA_COLOR[p.persona] || '#94a3b8';
+      const label = PERSONA_LABEL[p.persona] || p.persona;
+      const parts = Object.entries(p.counts || {}).map(([k,v]) =>
+        `${v} ${WORK_LABEL[k] || k}`).join(' · ') || `${p.total} itens`;
+      const pct = p.pct != null ? p.pct : 0;
+      return `<div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+          <span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:6px">${personaChip(p.persona)} ${esc(label)}</span>
+          <span style="color:var(--ink-muted)">${parts} · <b style="color:var(--ink)">${pct}%</b></span>
+        </div>
+        <div style="height:7px;background:var(--surface-2);border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${c};border-radius:999px"></div>
+        </div>
+      </div>`;
+    }).join('') || '<div style="color:var(--ink-muted);font-size:12px">sem eventos hoje</div>';
+    const top = (d.detail || []).slice(0, 10).map(x =>
+      `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--hairline);font-size:12px">
+        <span style="color:var(--ink-muted);flex:none">${fmtDT(x.created_at)}</span>
+        <span style="color:var(--ink);flex:1;overflow-wrap:anywhere">${esc(x.title)}</span>
+        <span style="color:var(--ink-muted);flex:none">${esc(PERSONA_LABEL[x.persona] || x.persona)}</span>
+      </div>`).join('') || '';
+    el.innerHTML = `
+      <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">📅 Relatório diário (personas)</h3>
+          <span style="font-size:11px;color:var(--ink-muted)">${esc(d.day || '')} · ${d.total_events || 0} eventos</span>
+        </div>
+        ${bars}
+        ${top ? '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--ink-muted);user-select:none">Ver destaques do dia</summary><div style="margin-top:6px">' + top + '</div></details>' : ''}
+      </div>`;
+  }
   function loadPMGitLog(slug){
     const el = document.getElementById('pm-git-log');
     if(!el) return;
@@ -523,7 +586,38 @@
 
   function suggestPMSkill(slug){
     fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/skills/suggest', {method: 'POST'})
-      .then(r => r.json()).then(() => loadPMSkills(slug)).catch(() => {});
+      .then(r => r.json()).then(d => {
+        if(d.suggested && d.id){
+          showSkillSuggestion(d);
+        } else {
+          window.alert && window.alert(d.reason || 'sem padrão suficiente');
+        }
+        loadPMSkills(slug);
+      }).catch(() => {});
+  }
+
+  function showSkillSuggestion(s){
+    const el = document.getElementById('pm-skill-suggestion');
+    if(!el) return;
+    const evid = (s.evidence || []).map(e =>
+      `<div style="display:flex;gap:8px;font-size:12px;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--hairline)">
+        <span style="color:var(--ink-muted);flex:none">${fmtDT(e.created_at)}</span>
+        <span style="overflow-wrap:anywhere">${esc(e.title)}</span>
+        <span style="color:var(--ink-muted);flex:none">${esc(e.event_type)}</span>
+      </div>`).join('') || '';
+    const benef = (s.benefits || []).map(b =>
+      `<li style="font-size:12px;color:var(--ink);line-height:1.5;margin-bottom:4px">${esc(b)}</li>`).join('');
+    el.innerHTML = `
+      <div style="background:#eab3081a;border:1px solid #eab30840;border-radius:var(--radius-md);padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:700;color:#eab308">✨ Skill sugerida: ${esc(s.name)}</span>
+          <span style="font-size:11px;color:var(--ink-muted)">confiança ${Math.round((s.confidence||0)*100)}% · ${s.evidence_count||0} evidência(s)</span>
+        </div>
+        <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px">Benefícios para este projeto</div>
+        <ul style="margin:0 0 8px;padding-left:18px">${benef || '<li style="font-size:12px;color:var(--ink-muted)">—</li>'}</ul>
+        <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px">Evidências</div>
+        <div style="max-height:140px;overflow-y:auto;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px">${evid}</div>
+      </div>`;
   }
 
   function approvePMSkill(sid){
@@ -811,6 +905,8 @@
   window.loadPMNotes = loadPMNotes;
   window.loadPMTokens = loadPMTokens;
   window.loadPMMcps = loadPMMcps;
+  window.loadPMDaily = loadPMDaily;
+  window.setPersonasWindow = setPersonasWindow;
   window.loadPMStack = loadPMStack;
   window.scanPMStack = scanPMStack;
   window.loadPMSkills = loadPMSkills;

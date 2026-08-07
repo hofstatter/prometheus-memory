@@ -132,6 +132,7 @@ def suggest_skill(project_slug: str) -> dict | None:
     count = len(evidence)
     confidence = round(min(CONF_BASE + CONF_STEP * (count - MIN_EVIDENCE), CONF_MAX), 2)
     content = _skill_content(project_slug, topic, evidence)
+    benefits = _benefits(project_slug, topic, evidence)
     skill_id = uuid.uuid4().hex[:12]
     now = _now()
     con = get_conn()
@@ -151,7 +152,30 @@ def suggest_skill(project_slug: str) -> dict | None:
     finally:
         con.close()
     return {"id": skill_id, "project_slug": project_slug, "name": name, "status": "draft",
-            "confidence": confidence, "evidence_count": count, "duplicate": False}
+            "confidence": confidence, "evidence_count": count, "duplicate": False,
+            "topic": topic, "benefits": benefits, "evidence": evidence}
+
+
+def _benefits(project_slug: str, topic: str, evidence: list) -> list:
+    """Benefícios concretos da skill para o projeto (P5.6) — derivados das evidências."""
+    if not evidence:
+        return []
+    types = {}
+    for e in evidence:
+        types[e.get("event_type", "work")] = types.get(e.get("event_type", "work"), 0) + 1
+    most = max(types.items(), key=lambda kv: kv[1])[0] if types else "work"
+    kind = {
+        "implementation": "implementação", "planning": "planejamento",
+        "review": "revisão", "fix": "correção", "decision": "decisão",
+        "docs": "documentação", "work": "trabalho",
+    }.get(most, most)
+    n = len(evidence)
+    return [
+        f"Padrão '{topic}' recorrente: {n} ocorrência(s) recentes no projeto {project_slug} — a skill captura o procedimento para não re-descobrir do zero.",
+        f"Foco principal: {kind} — aplicar a skill reduz tempo de setup e mantém consistência com o histórico do projeto.",
+        f"Evidências disponíveis: {n} evento(s) indexado(s) como base de exemplos reais (revisar antes de ativar).",
+        "Reuso: quando a mesma skill servir a 2+ projetos, candidata a promoção global (fluxo automático).",
+    ]
 
 
 def list_skills(project_slug: str | None = None, status: str | None = None) -> list:
