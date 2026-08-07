@@ -528,7 +528,14 @@
       <span style="color:var(--ink);font-weight:500">🐳 ${esc(c.name)}</span>
       <span style="color:var(--ink-muted)">${esc(c.status)}</span>
       <span style="color:var(--ink-muted);font-family:var(--font-mono)">${esc(c.ports)}</span>
-    </div>`).join('') || '<div style="color:var(--ink-muted);font-size:12px;padding:4px 0">nenhum container detectado</div>';
+    </div>`).join('');
+    const sysd = (prof.systemd_services || []).map(c => `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--hairline);font-size:12px">
+      <span style="color:var(--ink);font-weight:500">⚙️ ${esc(c.name)}.service</span>
+      <span style="color:var(--ink-muted)">${esc(c.status)}</span>
+    </div>`).join('');
+    const containersBlock = containers ? containers : (sysd
+      ? `<div style="padding:4px 0 2px;font-size:11px;color:var(--ink-muted);margin-bottom:4px">Nenhum container Docker — roda local via systemd:</div>${sysd}`
+      : '<div style="color:var(--ink-muted);font-size:12px;padding:4px 0">nenhum container detectado</div>');
     const git = prof.git || {};
     const gitBlock = git.tracked ? `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
@@ -563,7 +570,7 @@
       </div>
       <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px">
         <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Containers (runtime)</div>
-        ${containers}
+        ${containersBlock}
       </div>
       <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px">
         <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Git</div>

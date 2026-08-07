@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS prometheus_tech_profile (
   frameworks_json TEXT,
   databases_json TEXT,
   containers_json TEXT,
+  systemd_json TEXT,
   git_json TEXT,
   analyzed_at TIMESTAMP,
   scan_duration_ms INTEGER
@@ -186,9 +187,17 @@ def init_schema() -> None:
     con = get_conn()
     con.executescript(SCHEMA)
     _migrate_entities_canonical(con)
+    _migrate_tech_profile_systemd(con)
     con.commit()
     con.close()
     _init_done = True
+
+
+def _migrate_tech_profile_systemd(con: sqlite3.Connection) -> None:
+    """v1.3 — adiciona systemd_json a bancos criados antes da coluna existir."""
+    cols = [r[1] for r in con.execute("PRAGMA table_info(prometheus_tech_profile)").fetchall()]
+    if cols and "systemd_json" not in cols:
+        con.execute("ALTER TABLE prometheus_tech_profile ADD COLUMN systemd_json TEXT")
 
 
 def _migrate_entities_canonical(con: sqlite3.Connection) -> None:
