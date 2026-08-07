@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.git/
+node_modules/
+venv/
+.env
+*.db
+*.db-wal
+*.db-shm
+docs/SCREENSHOTS/
+evals/data/
