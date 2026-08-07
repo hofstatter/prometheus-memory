@@ -600,3 +600,33 @@ def pm_analytics_personas():
             con.close()
     except Exception as e:
         return jsonify({"error": str(e)[:200], "personas": [], "detail": [], "total_events": 0})
+
+
+@pm_bp.get("/analytics/daily")
+def pm_analytics_daily():
+    """Relatório diário por persona (P5.7) — gera para o dia se ainda não existe; consulta histórico."""
+    day = request.args.get("day", "")
+    from prometheus_db import get_conn
+    import json as _json
+    try:
+        con = get_conn()
+        try:
+            if not day:
+                # dia de hoje (o coletor gera o relatório ao cruzar 00:00 via last_report_day)
+                try:
+                    from telemetry_collector import _daily_report_date
+                    day = _daily_report_date()
+                except Exception:
+                    from datetime import datetime as _dt
+                    day = _dt.now().strftime("%Y-%m-%d")
+            row = con.execute(
+                "SELECT data_json FROM prometheus_reports_daily WHERE day = ?", (day,)
+            ).fetchone()
+            if row:
+                return jsonify(_json.loads(row["data_json"]))
+            return jsonify({"day": day, "total_events": 0, "personas": [], "detail": [],
+                            "note": "sem relatório gerado ainda — o coletor gera ao cruzar 00:00 (ou no próximo ciclo)"})
+        finally:
+            con.close()
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "personas": [], "detail": [], "total_events": 0})

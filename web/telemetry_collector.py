@@ -340,6 +340,52 @@ def sync_tasks(con: sqlite3.Connection) -> int:
     return n
 
 
+# ---------- relatório diário (P5.7) ----------
+def _daily_report_date() -> str:
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def generate_daily_report(con: sqlite3.Connection) -> dict:
+    """Gera/atualiza o relatório diário por persona (P5.7). Guarda em prometheus_reports_daily."""
+    con.execute(
+        "CREATE TABLE IF NOT EXISTS prometheus_reports_daily ("
+        "day TEXT PRIMARY KEY, data_json TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+    )
+    today = _daily_report_date()
+    where = "date(created_at) = ?"
+    params = (today,)
+    rows = con.execute(
+        f"SELECT agent_id, event_type, COUNT(*) AS n "
+        f"FROM prometheus_project_events WHERE {where} GROUP BY agent_id, event_type",
+        params,
+    ).fetchall()
+    personas = {}
+    total = 0
+    for r in rows:
+        pid = r["agent_id"] or "unknown"
+        p = personas.setdefault(pid, {"persona": pid, "counts": {}, "total": 0})
+        p["counts"][r["event_type"]] = r["n"]
+        p["total"] += r["n"]
+        total += r["n"]
+    for p in personas.values():
+        p["pct"] = round(100 * p["total"] / total, 1) if total else 0.0
+    detail = [
+        {"persona": r["agent_id"] or "unknown", "event_type": r["event_type"],
+         "title": r["title"], "created_at": r["created_at"]}
+        for r in con.execute(
+            f"SELECT agent_id, event_type, title, created_at "
+            f"FROM prometheus_project_events WHERE {where} ORDER BY created_at DESC LIMIT 50",
+            params,
+        ).fetchall()
+    ]
+    report = {"day": today, "total_events": total, "personas": list(personas.values()), "detail": detail}
+    con.execute(
+        "INSERT OR REPLACE INTO prometheus_reports_daily(day, data_json) VALUES(?,?)",
+        (today, json.dumps(report, ensure_ascii=False)),
+    )
+    return report
+
+
 def run() -> None:
     con = _connect()
     _ensure_meta(con)
@@ -347,6 +393,11 @@ def run() -> None:
     oc = ingest_opencode(con)
     git = ingest_git(con)
     tk = sync_tasks(con)
+    last_report_day = _get_meta(con, "last_report_day", "")
+    today = _daily_report_date()
+    if last_report_day != today:
+        generate_daily_report(con)
+        _set_meta(con, "last_report_day", today)
     con.commit()
     _set_meta(con, "last_run", _now_iso())
     con.commit()
