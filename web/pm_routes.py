@@ -223,6 +223,161 @@ def pm_git_get(slug):
         return jsonify({"error": str(e)[:200], "git": {"tracked": False}}), 500
 
 
+@pm_bp.get("/projects/<slug>/notes")
+def pm_project_notes(slug):
+    """Notas do projeto (P5.5) — agrupa ~/notes/*.md por subpasta/conteúdo e filtra pelo slug."""
+    notes_dir = Path(__import__("os").environ.get(
+        "PROMETHEUS_NOTES_DIR", str(Path.home() / "notes")))
+    if not notes_dir.exists():
+        return jsonify({"notes": [], "groups": []})
+    from prometheus_db import get_conn
+    try:
+        con = get_conn()
+        try:
+            row = con.execute(
+                "SELECT name FROM prometheus_projects WHERE slug = ?", (slug,)
+            ).fetchone()
+        finally:
+            con.close()
+    except Exception:
+        row = None
+    pname = (row[0] if row else slug).lower()
+    notes = []
+    for f in notes_dir.rglob("*.md"):
+        st = f.stat()
+        rel = f.relative_to(notes_dir)
+        group = str(rel.parent) if str(rel.parent) != "." else "geral"
+        try:
+            head = f.read_text(encoding="utf-8", errors="replace")[:600].lower()
+        except OSError:
+            continue
+        if slug.lower() not in head and pname not in head:
+            continue
+        notes.append({
+            "id": rel.as_posix(),
+            "name": f.stem,
+            "group": group,
+            "size": st.st_size,
+            "modified": __import__("datetime").datetime.fromtimestamp(
+                st.st_mtime).isoformat(),
+        })
+    notes.sort(key=lambda x: x["modified"], reverse=True)
+    groups = {}
+    for n in notes:
+        groups.setdefault(n["group"], []).append(n)
+    return jsonify({"notes": notes, "groups": groups, "total": len(notes)})
+
+
+@pm_bp.get("/projects/<slug>/tokens")
+def pm_project_tokens(slug):
+    """Estimativa de tokens por projeto (P5.5) — fatia do total global proporcional aos eventos."""
+    from token_savings import compute_savings
+    from prometheus_db import get_conn
+    try:
+        savings = compute_savings()
+    except Exception as e:
+        savings = {"total_tokens_saved": 0, "offload_tokens_saved": 0,
+                   "compression_tokens_saved": 0, "offloaded_bytes": 0}
+    try:
+        con = get_conn()
+        try:
+            tot = con.execute(
+                "SELECT COUNT(*) AS n FROM prometheus_project_events"
+            ).fetchone()["n"] or 0
+            mine = con.execute(
+                "SELECT COUNT(*) AS n FROM prometheus_project_events WHERE project_slug = ?",
+                (slug,),
+            ).fetchone()["n"] or 0
+        finally:
+            con.close()
+    except Exception:
+        tot, mine = 0, 0
+    share = (mine / tot) if tot else 0.0
+    total = savings.get("total_tokens_saved", 0)
+    return jsonify({
+        "project_slug": slug,
+        "events_share_pct": round(share * 100, 1),
+        "estimated_tokens_saved": int(total * share),
+        "global_tokens_saved": int(total),
+        "offload_tokens_saved": int(savings.get("offload_tokens_saved", 0) * share),
+        "compression_tokens_saved": int(savings.get("compression_tokens_saved", 0) * share),
+        "note": "Estimativa proporcional aos eventos do projeto sobre o total global",
+    })
+
+
+@pm_bp.get("/projects/<slug>/mcps")
+def pm_project_mcps(slug):
+    """MCPs do projeto (P5.5) — detecta opencode.jsonc (bloco mcp) e docker-compose services."""
+    from prometheus_db import get_conn
+    import json as _json
+    try:
+        con = get_conn()
+        try:
+            row = con.execute(
+                "SELECT repo_path FROM prometheus_projects WHERE slug = ?", (slug,)
+            ).fetchone()
+        finally:
+            con.close()
+    except Exception:
+        row = None
+    rp = (row[0] if row else None) or ""
+    mcps = []
+    docker = []
+    if rp:
+        root = Path(rp)
+        for cfg_name in ("opencode.jsonc", "opencode.json", ".opencode/opencode.jsonc"):
+            cfg = root / cfg_name
+            if cfg.exists():
+                try:
+                    txt = cfg.read_text()
+                    txt = _json.loads(txt) if cfg_name.endswith(".json") else txt
+                    import re as _re
+                    # jsonc -> json: remove comentários // e /* */ SEM quebrar "https://"
+                    def _no_comment(m):
+                        return m.group(1)
+                    txt = _re.sub(r'("(?:[^"\\]|\\.)*")|//[^\n]*|/\*.*?\*/', _no_comment, txt, flags=_re.DOTALL)
+                    data = _json.loads(txt)
+                    mcp_block = data.get("mcp") or {}
+                    for name, conf in mcp_block.items():
+                        mcps.append({
+                            "name": name,
+                            "type": (conf or {}).get("type", "local"),
+                            "source": cfg_name,
+                        })
+                except Exception:
+                    pass
+        for dc_name in ("docker-compose.yml", "docker-compose.yaml", "compose.yaml", "compose.yml"):
+            dc = root / dc_name
+            if dc.exists():
+                try:
+                    txt = dc.read_text()
+                    svc = []
+                    in_services = False
+                    lines = txt.splitlines()
+                    for i, line in enumerate(lines):
+                        raw = line
+                        stripped = raw.strip()
+                        if not stripped or stripped.startswith("#"):
+                            continue
+                        indent = len(raw) - len(raw.lstrip(" "))
+                        if stripped == "services:":
+                            in_services = True
+                            continue
+                        if in_services and indent == 2 and stripped.endswith(":"):
+                            nm = stripped.rstrip(":")
+                            # valida: é serviço se a linha seguinte (indent 4) tem image:/build:/container_name:
+                            nxt = lines[i + 1].strip() if i + 1 < len(lines) else ""
+                            if nm and " " not in nm and "{" not in nm and (
+                                nxt.startswith(("image:", "build:", "container_name:", "extends:"))
+                            ):
+                                svc.append(nm)
+                    docker = svc
+                except OSError:
+                    pass
+                break
+    return jsonify({"mcps": mcps, "docker_services": docker, "repo_path": rp})
+
+
 @pm_bp.get("/projects/<slug>/git/log")
 def pm_git_log(slug):
     """Histórico git real do projeto (P5.4) — últimos N commits com hash, msg, autor, data.

@@ -173,6 +173,12 @@
       <div id="pm-skills" style="margin-bottom:18px"></div>
       <div id="pm-connections" style="margin-bottom:18px"></div>
 
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+        <div id="pm-notes"></div>
+        <div id="pm-tokens"></div>
+      </div>
+      <div id="pm-mcps" style="margin-bottom:18px"></div>
+
       <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Kanban</h3>
       <div id="pm-kanban" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">${renderKanban(events)}</div>
 
@@ -184,6 +190,9 @@
   loadPMSkills(slug);
   loadPMConnections(slug);
   loadPMPersonas(slug);
+  loadPMNotes(slug);
+  loadPMTokens(slug);
+  loadPMMcps(slug);
   }
 
   function kanbanCol(title, items, color){
@@ -694,6 +703,63 @@
     document.getElementById('pm-conn-edit').style.display = 'none';
   }
 
+  // ── Notes / Tokens / MCPs por projeto (P5.5) ──────────────────────
+  function loadPMNotes(slug){
+    const el = document.getElementById('pm-notes');
+    if(!el) return;
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/notes').then(r => r.json()).then(d => {
+      const total = d.total || 0;
+      const groups = Object.entries(d.groups || {}).map(([g, items]) =>
+        `<div style="font-size:12px;color:var(--ink-muted);margin:2px 0"><b style="color:var(--ink)">${esc(g)}</b> — ${items.length} doc(s)</div>`).join('') || '<div style="color:var(--ink-muted);font-size:12px">—</div>';
+      const recent = (d.notes || []).slice(0, 4).map(n =>
+        `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--hairline);overflow-wrap:anywhere">
+          <span>📝 ${esc(n.name)}</span><span style="color:var(--ink-muted);flex:none">${fmtDT(n.modified)}</span>
+        </div>`).join('') || '';
+      el.innerHTML = `
+        <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px;height:100%">
+          <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">📝 Notes do projeto <span style="color:var(--ink);font-weight:600">(${total})</span></div>
+          ${groups}
+          ${recent ? '<div style="margin-top:8px;border-top:1px solid var(--hairline);padding-top:6px">' + recent + '</div>' : ''}
+        </div>`;
+    }).catch(() => { el.innerHTML = ''; });
+  }
+
+  function loadPMTokens(slug){
+    const el = document.getElementById('pm-tokens');
+    if(!el) return;
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/tokens').then(r => r.json()).then(d => {
+      el.innerHTML = `
+        <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px;height:100%">
+          <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">💰 Tokens economizados</div>
+          <div style="font-size:22px;font-weight:700;color:#22c55e;margin-bottom:4px">${Number(d.estimated_tokens_saved || 0).toLocaleString('pt-BR')}</div>
+          <div style="font-size:11px;color:var(--ink-muted);line-height:1.6">
+            <div>offload: <b style="color:var(--ink)">${Number(d.offload_tokens_saved || 0).toLocaleString('pt-BR')}</b></div>
+            <div>compressão: <b style="color:var(--ink)">${Number(d.compression_tokens_saved || 0).toLocaleString('pt-BR')}</b></div>
+            <div style="margin-top:6px;opacity:.8">${d.events_share_pct}% dos eventos globais · global ${Number(d.global_tokens_saved || 0).toLocaleString('pt-BR')}</div>
+          </div>
+        </div>`;
+    }).catch(() => { el.innerHTML = ''; });
+  }
+
+  function loadPMMcps(slug){
+    const el = document.getElementById('pm-mcps');
+    if(!el) return;
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/mcps').then(r => r.json()).then(d => {
+      const mcpChips = (d.mcps || []).map(m =>
+        `<span style="display:inline-block;background:#0ea5e91a;border:1px solid #0ea5e940;border-radius:999px;padding:3px 10px;font-size:12px;color:#0ea5e9;margin:0 4px 4px 0">🔌 ${esc(m.name)} <span style="opacity:.7">(${esc(m.type)})</span></span>`).join('') || '<span style="color:var(--ink-muted);font-size:12px">nenhum MCP detectado</span>';
+      const dockerChips = (d.docker_services || []).map(s =>
+        `<span style="display:inline-block;background:var(--surface-2);border:1px solid var(--hairline);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink);margin:0 4px 4px 0">🐳 ${esc(s)}</span>`).join('') || '';
+      el.innerHTML = `
+        <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 14px">
+          <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">🔌 MCPs & Serviços</div>
+          <div style="font-size:11px;color:var(--ink-muted);margin-bottom:4px">MCPs (opencode.jsonc):</div>
+          <div style="margin-bottom:8px">${mcpChips}</div>
+          <div style="font-size:11px;color:var(--ink-muted);margin-bottom:4px">Containers (docker-compose):</div>
+          <div>${dockerChips || '<span style="color:var(--ink-muted);font-size:12px">—</span>'}</div>
+        </div>`;
+    }).catch(() => { el.innerHTML = ''; });
+  }
+
   // ── Presença em tempo real (polling 10s) ───────────────────────────
   function loadPresenceLoop(){
     if(S.timer) return;
@@ -742,6 +808,9 @@
   window.loadPMConnections = loadPMConnections;
   window.loadPMPersonas = loadPMPersonas;
   window.loadPMGitLog = loadPMGitLog;
+  window.loadPMNotes = loadPMNotes;
+  window.loadPMTokens = loadPMTokens;
+  window.loadPMMcps = loadPMMcps;
   window.loadPMStack = loadPMStack;
   window.scanPMStack = scanPMStack;
   window.loadPMSkills = loadPMSkills;
