@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Blueprint /api/pm — sessões, eventos, projetos, presença (Fase A0)."""
 from flask import Blueprint, jsonify, request
+from pathlib import Path
 
 pm_bp = Blueprint("pm", __name__, url_prefix="/api/pm")
 
@@ -220,6 +221,56 @@ def pm_git_get(slug):
         return jsonify({"git": (prof or {}).get("git", {"tracked": False})})
     except Exception as e:
         return jsonify({"error": str(e)[:200], "git": {"tracked": False}}), 500
+
+
+@pm_bp.get("/projects/<slug>/git/log")
+def pm_git_log(slug):
+    """Histórico git real do projeto (P5.4) — últimos N commits com hash, msg, autor, data.
+
+    Usa repo_path de prometheus_projects; roda `git log` read-only.
+    """
+    try:
+        n = int(request.args.get("n", 20))
+    except (TypeError, ValueError):
+        n = 20
+    n = max(1, min(n, 100))
+    from prometheus_db import get_conn
+    try:
+        con = get_conn()
+        try:
+            row = con.execute(
+                "SELECT repo_path FROM prometheus_projects WHERE slug = ?",
+                (slug,),
+            ).fetchone()
+        finally:
+            con.close()
+    except Exception:
+        row = None
+    rp = (row[0] if row else None) or ""
+    if not rp or not Path(rp).joinpath(".git").exists():
+        return jsonify({"tracked": False, "commits": [], "repo_path": rp})
+    import subprocess
+    try:
+        out = subprocess.run(
+            ["git", "-C", rp, "log", "--pretty=%H%x1e%h%x1e%an%x1e%ae%x1e%ad%x1e%s", "--date=iso",
+             "-n", str(n)],
+            capture_output=True, text=True, timeout=15,
+        ).stdout
+    except (subprocess.SubprocessError, OSError) as e:
+        return jsonify({"tracked": True, "error": str(e)[:200], "commits": []})
+    commits = []
+    for line in out.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split("\x1e", 5)
+        if len(parts) < 6:
+            continue
+        commits.append({
+            "sha": parts[0], "short": parts[1], "author": parts[2],
+            "email": parts[3], "date": parts[4].replace(" ", "T"), "message": parts[5],
+        })
+    return jsonify({"tracked": True, "commits": commits, "repo_path": rp})
 
 
 @pm_bp.get("/projects/<slug>/runtime")
