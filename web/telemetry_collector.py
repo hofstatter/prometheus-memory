@@ -177,7 +177,7 @@ def ingest_opencode(con: sqlite3.Connection) -> int:
     n = 0
     try:
         rows = src.execute(
-            "SELECT id, project_id, title, directory, path, time_created "
+            "SELECT id, project_id, title, directory, path, time_created, agent, model "
             "FROM session ORDER BY time_created DESC LIMIT 200"
         ).fetchall()
     except Exception:
@@ -192,20 +192,32 @@ def ingest_opencode(con: sqlite3.Connection) -> int:
         ts_f = float(ts)
         if ts_f <= last_f:
             continue
+        # persona: session.agent (build/plan/inspector/visionario/...) + session.model (json)
         persona = "opencode"
-        # modelo da primeira mensagem
         try:
-            m = src.execute(
-                "SELECT data FROM message WHERE session_id=? ORDER BY time_created LIMIT 1",
-                (r["id"],),
-            ).fetchone()
-            if m and m["data"]:
-                d = json.loads(m["data"]) if isinstance(m["data"], str) else m["data"]
-                model = (d.get("model") or "").split("/")[-1] if isinstance(d, dict) else ""
-                if model:
-                    persona = _persona_from_model(model)
+            sagent = (r["agent"] or "").strip().lower()
+            if sagent == "build":
+                persona = "pedreiro"
+            elif sagent == "plan":
+                persona = "arquiteto"
+            elif sagent == "inspector":
+                persona = "inspector"
+            elif sagent == "visionario":
+                persona = "visionario"
+            elif sagent:
+                persona = sagent
         except Exception:
             pass
+        if persona == "opencode":
+            try:
+                smodel = r["model"]
+                if isinstance(smodel, str):
+                    mj = json.loads(smodel)
+                    persona = _persona_from_model((mj.get("providerID", "") + "/" + mj.get("id", "")) if isinstance(mj, dict) else smodel)
+                elif isinstance(smodel, dict):
+                    persona = _persona_from_model(smodel.get("providerID", "") + "/" + smodel.get("id", ""))
+            except Exception:
+                pass
         cid = _sha1("opencode-session", r["id"])
         title = (r["title"] or f"sessão {r['id'][:6]}")[:140]
         try:

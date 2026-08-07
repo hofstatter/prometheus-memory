@@ -315,3 +315,82 @@ def pm_presence():
         return jsonify({"sessions": presence(project_slug=project)})
     except Exception as e:
         return jsonify({"error": str(e)[:200], "sessions": []})
+
+
+@pm_bp.get("/analytics/personas")
+def pm_analytics_personas():
+    """Relatório por persona (P5.3) — counts por persona × event_type, %, lista detalhada.
+
+    window: horas (default 24). Extensível: persona = agent_id, sem hardcode.
+    Eventos 'work' de sessões são classificados pelo papel da persona
+    (arquiteto→planning, pedreiro→implementation, inspector/visionario→review).
+    """
+    try:
+        window = int(request.args.get("window", 24))
+    except (TypeError, ValueError):
+        window = 24
+    window = max(1, min(window, 24 * 30))
+    project = request.args.get("project", "") or None
+    PERSONA_ROLE = {
+        "arquiteto": "planning",
+        "pedreiro": "implementation",
+        "inspector": "review",
+        "visionario": "review",
+    }
+    from prometheus_db import get_conn
+    try:
+        con = get_conn()
+        try:
+            where = "created_at >= datetime('now', ?)"
+            params = [f"-{window} hours"]
+            if project:
+                where += " AND project_slug = ?"
+                params.append(project)
+            rows = con.execute(
+                f"SELECT agent_id, event_type, COUNT(*) AS n, "
+                f"MAX(created_at) AS last_ts "
+                f"FROM prometheus_project_events WHERE {where} "
+                f"GROUP BY agent_id, event_type ORDER BY n DESC",
+                params,
+            ).fetchall()
+            # agrega por persona, classificando 'work' pelo papel da persona
+            personas = {}
+            total = 0
+            for r in rows:
+                pid = r["agent_id"] or "unknown"
+                etype = r["event_type"]
+                if etype == "work" and pid in PERSONA_ROLE:
+                    etype = PERSONA_ROLE[pid]
+                p = personas.setdefault(pid, {"persona": pid, "counts": {}, "total": 0, "last_ts": None})
+                p["counts"][etype] = p["counts"].get(etype, 0) + r["n"]
+                p["total"] += r["n"]
+                p["last_ts"] = max(p["last_ts"], r["last_ts"]) if p["last_ts"] else r["last_ts"]
+                total += r["n"]
+            for p in personas.values():
+                p["pct"] = round(100 * p["total"] / total, 1) if total else 0.0
+            # lista detalhada (itens por persona, limitada)
+            detail_rows = con.execute(
+                f"SELECT agent_id, event_type, title, created_at "
+                f"FROM prometheus_project_events WHERE {where} "
+                f"ORDER BY created_at DESC LIMIT 60",
+                params,
+            ).fetchall()
+            detail = []
+            for r in detail_rows:
+                etype = r["event_type"]
+                if etype == "work" and (r["agent_id"] or "") in PERSONA_ROLE:
+                    etype = PERSONA_ROLE[r["agent_id"]]
+                detail.append({
+                    "persona": r["agent_id"] or "unknown", "event_type": etype,
+                    "title": r["title"], "created_at": r["created_at"],
+                })
+            return jsonify({
+                "window_hours": window,
+                "total_events": total,
+                "personas": list(personas.values()),
+                "detail": detail,
+            })
+        finally:
+            con.close()
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "personas": [], "detail": [], "total_events": 0})
