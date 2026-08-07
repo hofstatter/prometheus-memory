@@ -1,0 +1,46 @@
+# Prometheus Memory — 1 container all-in-one (P6)
+# Uso: docker compose up -d
+# Dados NUNCA saem do host: volume nomeado prometheus-data + binds read-only.
+# A migração dos dados existentes (~/.hermes/mnemosyne → volume) é feita uma única vez
+# pelo script scripts/migrate_to_docker.sh (NÃO apaga a origem — rollback via systemd).
+
+services:
+  prometheus-memory:
+    build: .
+    image: prometheus-memory:latest
+    container_name: prometheus-memory
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8777:8777"   # Web UI + API (localhost apenas)
+      - "127.0.0.1:8765:8765"   # MCP SSE (agentes — localhost)
+      - "127.0.0.1:8766:8766"   # REST wrapper + embeddings (localhost)
+    volumes:
+      # dados do Mnemosyne — VOLUME NOMEADO (dono dos dados; migrar 1x com migrate_to_docker.sh)
+      - prometheus-data:/data/mnemosyne
+      # notas
+      - ${HOME}/notes:/data/notes
+      # repos dos projetos (READ-ONLY — painel lê git/compose/stack)
+      - ${HOME}/Projetos:/data/projetos:ro
+      # OpenCode do host (READ-ONLY — coletor de telemetria P5.1)
+      - ${HOME}/.config/opencode:/telemetry/config:ro
+      - ${HOME}/.local/share/opencode:/telemetry/share:ro
+    env_file:
+      - ${HOME}/Projetos/web/.env
+    environment:
+      HERMES_HOME: /data
+      MNEMOSYNE_HOME: /data/mnemosyne
+      PROMETHEUS_NOTES_DIR: /data/notes
+      PROMETHEUS_PROJECTS_ROOT: /data/projetos
+      PROMETHEUS_HOST: 0.0.0.0
+      PROMETHEUS_PORT: "8777"
+      OPENCODE_CONFIG_DIR: /telemetry/config
+      OPENCODE_DATA_DIR: /telemetry/share
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8777/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  prometheus-data:
