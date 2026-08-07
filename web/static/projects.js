@@ -8,6 +8,7 @@
     projects: [],
     selected: null,
     events: [],
+    tasks: [],
     presence: [],
     timer: null,
     active: false
@@ -94,11 +95,18 @@
     fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/report').then(r => r.ok ? r.json() : null).then(rep => {
       fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/events').then(r => r.json()).then(d => {
         S.events = d.events || [];
-        renderDetail(rep, S.events);
-        loadPMBoardsPresence();
-        document.getElementById('projects-empty').style.display = 'none';
-        document.getElementById('projects-detail').style.display = 'block';
-        renderSidebar();
+        fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/tasks').then(r => r.json()).then(td => {
+          S.tasks = td.tasks || [];
+          renderDetail(rep, S.events);
+          loadPMBoardsPresence();
+          document.getElementById('projects-empty').style.display = 'none';
+          document.getElementById('projects-detail').style.display = 'block';
+          renderSidebar();
+        }).catch(()=>{
+          S.tasks = [];
+          renderDetail(rep, S.events);
+          loadPMBoardsPresence();
+        });
       });
     }).catch(()=>{});
   }
@@ -188,23 +196,26 @@
   function cardHTML(ev){
     const blocked = ev.status_hint === 'blocked';
     const border = blocked ? '1px solid #ef4444' : '1px solid var(--hairline)';
-    return `<div class="pm-card" data-eid="${esc(ev.id)}" style="cursor:pointer;background:var(--surface-2);border:${border};border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px;transition:transform .12s var(--ease-out);transform:scale(1)">
+    const persona = ev.agent_id ? personaChip(ev.agent_id) : '';
+    return `<div class="pm-card" data-eid="${esc(ev.id || ev.source_event_id || '')}" style="cursor:pointer;background:var(--surface-2);border:${border};border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px;transition:transform .12s var(--ease-out);transform:scale(1)">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px">
-        ${typeChip(ev.event_type)}
+        ${typeChip(ev.event_type || 'work')}
         ${blocked ? '<span style="font-size:10px;font-weight:700;color:#ef4444">BLOQUEADO</span>' : ''}
       </div>
       <div style="font-size:13px;color:var(--ink);font-weight:500;line-height:1.35;overflow-wrap:anywhere">${esc(ev.title)}</div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-top:6px">
-        <span>${esc(ev.harness || '')}${ev.agent_id ? ' · ' + esc(ev.agent_id) : ''}</span>
-        <span>${timeAgo(ev.created_at)}</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink-muted);margin-top:6px">
+        <span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap">${persona}${ev.event_created_at || ev.created_at ? '<span style="opacity:.85">· ' + timeAgo(ev.event_created_at || ev.created_at) + '</span>' : ''}</span>
+        ${ev.event_type ? '' : ''}
       </div>
     </div>`;
   }
 
   function renderKanban(events){
+    // P5.2: usa TASKS reais (prometheus_project_tasks) quando disponiveis
+    const source = (S.tasks && S.tasks.length) ? S.tasks : events;
     const todo = [], doing = [], done = [];
-    events.forEach(ev => {
-      const st = ev.status_hint || '';
+    source.forEach(ev => {
+      const st = ev.status || ev.status_hint || '';
       if(st === 'done' || st === 'resolved') done.push(ev);
       else if(st === 'doing' || st === 'blocked') doing.push(ev);
       else todo.push(ev);
@@ -214,23 +225,57 @@
       + kanbanCol('Concluído', done, '#22c55e');
   }
 
+  const PERSONA_COLOR = {
+    arquiteto: '#8b5cf6', pedreiro: '#22c55e', inspector: '#f59e0b',
+    visionario: '#06b6d4', git: '#64748b', opencode: '#94a3b8'
+  };
+  function personaChip(p){
+    const c = PERSONA_COLOR[p] || '#94a3b8';
+    const label = p === 'inspector' ? 'inspetor' : p;
+    return `<span style="font-size:10px;font-weight:600;color:${c};background:${c}1a;border:1px solid ${c}40;border-radius:999px;padding:2px 8px">${esc(label)}</span>`;
+  }
+
   function renderTimeline(events){
     if(!events.length) return '<div style="color:var(--ink-muted);font-size:12px">Sem eventos ainda</div>';
     const items = events.slice().reverse().map(ev => {
       const c = TYPE_COLOR[ev.event_type] || '#94a3b8';
-      return `<div style="display:flex;flex-direction:column;align-items:center;min-width:130px;max-width:150px;padding:0 8px;position:relative">
+      return `<div class="pm-tl-item" data-eid="${esc(ev.id)}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:150px;max-width:170px;padding:8px;border-radius:var(--radius-md);transition:background .12s var(--ease-out)" title="clique para detalhes">
         <div style="width:12px;height:12px;border-radius:50%;background:${c};box-shadow:0 0 0 3px ${c}22;margin-bottom:8px"></div>
         <div style="font-size:11px;font-weight:600;color:var(--ink);text-align:center;overflow-wrap:anywhere">${esc(ev.title)}</div>
-        <div style="font-size:10px;color:var(--ink-muted);margin-top:3px;text-align:center">${timeAgo(ev.created_at)}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap;justify-content:center">${ev.agent_id ? personaChip(ev.agent_id) : ''}</div>
+        <div style="font-size:10px;color:var(--ink-muted);margin-top:3px;text-align:center">${fmtDT(ev.created_at)}</div>
       </div>`;
     }).join('');
-    return `<div style="display:flex;gap:4px;align-items:flex-start;min-width:max-content">${items}</div>`;
+    return `<div style="display:flex;gap:6px;align-items:flex-start;min-width:max-content">${items}</div>`;
+  }
+
+  function fmtDT(iso){
+    if(!iso) return '';
+    let t = new Date(iso.includes(' ') ? iso.replace(' ', 'T') : iso);
+    if(isNaN(t.getTime())) return esc(iso);
+    const d = String(t.getDate()).padStart(2,'0');
+    const mo = String(t.getMonth()+1).padStart(2,'0');
+    const h = String(t.getHours()).padStart(2,'0');
+    const mi = String(t.getMinutes()).padStart(2,'0');
+    return `${d}/${mo} ${h}:${mi}`;
   }
 
   // ── Drawer de detalhes ──────────────────────────────────────────────
   function openPMDrawer(eventId){
     const ev = S.events.find(e => e.id === eventId);
-    if(!ev) return;
+    if(ev) renderDrawer(ev);
+    else {
+      // fallback: task do kanban (sem evento completo na lista)
+      const tk = (S.tasks || []).find(t => (t.source_event_id || t.id) === eventId);
+      if(tk) renderDrawer({
+        id: eventId, title: tk.title, summary: '',
+        event_type: tk.event_type || 'work', agent_id: tk.agent_id,
+        status_hint: tk.status, created_at: tk.updated_at
+      });
+    }
+  }
+
+  function renderDrawer(ev){
     const drawer = document.getElementById('projects-drawer');
     const body = document.getElementById('projects-drawer-body');
     body.innerHTML = `
@@ -238,7 +283,7 @@
         <span style="font-size:12px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">Detalhes do evento</span>
         <button onclick="closePMDrawer()" style="background:none;border:none;color:var(--ink-muted);font-size:16px;cursor:pointer;transform:scale(1)">✕</button>
       </div>
-      <div style="margin-bottom:10px">${typeChip(ev.event_type)}</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">${typeChip(ev.event_type)}${ev.agent_id ? personaChip(ev.agent_id) : ''}</div>
       <h3 style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:8px">${esc(ev.title)}</h3>
       ${ev.summary ? `<p style="font-size:13px;color:var(--ink-muted);line-height:1.5;white-space:pre-wrap;margin-bottom:12px">${esc(ev.summary)}</p>` : ''}
       <div id="pm-drawer-memory" style="font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap"></div>
@@ -247,10 +292,10 @@
         <div>Harness: <b style="color:var(--ink)">${esc(ev.harness || '—')}</b></div>
         <div>Agente: <b style="color:var(--ink)">${esc(ev.agent_id || '—')}</b></div>
         <div>Sessão: <b style="color:var(--ink)">${esc(ev.session_key || '—')}</b></div>
-        <div>Data: <b style="color:var(--ink)">${esc(ev.created_at || '—')}</b></div>
+        <div>Data: <b style="color:var(--ink)">${fmtDT(ev.created_at || ev.updated_at)}</b></div>
         ${ev.memory_id ? `<div>Memória: <b style="color:var(--ink)">${esc(ev.memory_id)}</b></div>` : ''}
       </div>`;
-    drawer.style.width = '320px';
+    drawer.style.width = '340px';
     drawer.setAttribute('aria-hidden', 'false');
     if(ev.memory_id){
       fetch('/api/memory/' + encodeURIComponent(ev.memory_id)).then(r => r.ok ? r.json() : null).then(m => {
@@ -578,6 +623,8 @@
       });
     }
     document.addEventListener('click', function(e){
+      const tl = e.target.closest('.pm-tl-item');
+      if(tl && tl.dataset.eid){ openPMDrawer(tl.dataset.eid); return; }
       const card = e.target.closest('.pm-card');
       if(card && card.dataset.eid){ openPMDrawer(card.dataset.eid); return; }
       const t = e.target.closest('[data-pm-action]');

@@ -149,10 +149,10 @@ def ingest_workflow(con: sqlite3.Connection) -> int:
         )
         con.execute(
             "INSERT OR IGNORE INTO prometheus_project_events(id,project_slug,session_key,"
-            "harness,agent_id,event_type,title,summary,created_at) "
-            "VALUES(?,?,?,?,?,?,?,?,?)",
+            "harness,agent_id,event_type,title,summary,status_hint,created_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
             (cid, pslug, sk, "opencode", persona, EVENT_TYPE_BY_STAGE.get(persona, "work"),
-             title, handoff[:4000], ts),
+             title, handoff[:4000], _status_hint(EVENT_TYPE_BY_STAGE.get(persona, "work")), ts),
         )
         if pslug:
             con.execute(
@@ -216,10 +216,11 @@ def ingest_opencode(con: sqlite3.Connection) -> int:
             ts_iso = _now_iso()
         con.execute(
             "INSERT OR IGNORE INTO prometheus_project_events(id,project_slug,session_key,"
-            "harness,agent_id,event_type,title,summary,created_at) "
-            "VALUES(?,?,?,?,?,?,?,?,?)",
+            "harness,agent_id,event_type,title,summary,status_hint,created_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
             (cid, _project_for_path(con, r["directory"]), r["id"], "opencode", persona,
-             "work", title, f"session {r['id'][:8]} · {Path(r['path']).name if r['path'] else ''}", ts_iso),
+             "work", title, f"session {r['id'][:8]} · {Path(r['path']).name if r['path'] else ''}",
+             "doing", ts_iso),
         )
         pslug2 = _project_for_path(con, r["directory"])
         if pslug2:
@@ -272,10 +273,10 @@ def ingest_git(con: sqlite3.Connection) -> int:
             cid = _sha1("git", r["slug"], sha)
             con.execute(
                 "INSERT OR IGNORE INTO prometheus_project_events(id,project_slug,session_key,"
-                "harness,agent_id,event_type,title,summary,created_at) "
-                "VALUES(?,?,?,?,?,?,?,?,?)",
+                "harness,agent_id,event_type,title,summary,status_hint,created_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (cid, r["slug"], None, "git", author, typ, msg[:140],
-                 f"{sha[:9]} · {author} <{email}>", date.replace(" ", "T")),
+                 f"{sha[:9]} · {author} <{email}>", _status_hint(typ), date.replace(" ", "T")),
             )
             n += 1
         if out:
@@ -291,24 +292,37 @@ def ingest_git(con: sqlite3.Connection) -> int:
 
 
 # ---------- tasks (kanban) ----------
+def _status_hint(etype: str) -> str:
+    return {
+        "planning": "doing",
+        "implementation": "doing",
+        "work": "doing",
+        "decision": "done",
+        "review": "done",
+        "docs": "done",
+        "fix": "done",
+    }.get(etype, "todo")
+
+
 def sync_tasks(con: sqlite3.Connection) -> int:
     """Tasks do kanban a partir dos eventos recentes por projeto."""
     n = 0
     for r in con.execute(
-        "SELECT project_slug, agent_id, event_type, title, MAX(created_at) AS ts "
+        "SELECT project_slug, agent_id, event_type, title, MAX(created_at) AS ts, "
+        "       MAX(id) AS ev_id "
         "FROM prometheus_project_events WHERE project_slug IS NOT NULL "
         "GROUP BY project_slug, title"
     ).fetchall():
         if not r["project_slug"]:
             continue
         status = "done" if r["event_type"] in ("review", "docs", "fix") else (
-            "doing" if r["event_type"] in ("implementation", "work") else "todo"
+            "doing" if r["event_type"] in ("implementation", "work", "planning") else "todo"
         )
         tid = _sha1("task", r["project_slug"], r["title"])
         con.execute(
             "INSERT OR IGNORE INTO prometheus_project_tasks(id,project_slug,title,status,"
             "source_event_id,confidence,updated_at) VALUES(?,?,?,?,?,?,?)",
-            (tid, r["project_slug"], r["title"][:200], status, None, 0.7, r["ts"]),
+            (tid, r["project_slug"], r["title"][:200], status, r["ev_id"], 0.7, r["ts"]),
         )
         n += 1
     return n
