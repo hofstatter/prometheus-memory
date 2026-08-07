@@ -93,6 +93,38 @@ def pm_project_events(slug):
         return jsonify({"error": str(e)[:200], "events": []})
 
 
+@pm_bp.get("/projects/<slug>/tasks")
+def pm_project_tasks(slug):
+    """Tasks do kanban (prometheus_project_tasks) com persona/timestamp do evento-fonte."""
+    from prometheus_db import get_conn
+    try:
+        con = get_conn()
+        try:
+            rows = con.execute(
+                "SELECT t.id, t.title, t.status, t.updated_at, "
+                "       e.agent_id, e.event_type, e.created_at AS event_created_at "
+                "FROM prometheus_project_tasks t "
+                "LEFT JOIN prometheus_project_events e ON e.id = t.source_event_id "
+                "WHERE t.project_slug = ? ORDER BY t.updated_at DESC LIMIT 200",
+                (slug,),
+            ).fetchall()
+            tasks = [dict(r) for r in rows]
+            # fallback: eventos sem task derivada, agrupados por status_hint
+            if not tasks:
+                evs = con.execute(
+                    "SELECT id, agent_id, event_type, title, status_hint, created_at "
+                    "FROM prometheus_project_events WHERE project_slug = ? "
+                    "ORDER BY created_at DESC LIMIT 100",
+                    (slug,),
+                ).fetchall()
+                tasks = [dict(r) for r in evs]
+            return jsonify({"tasks": tasks})
+        finally:
+            con.close()
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "tasks": []}), 500
+
+
 @pm_bp.get("/projects/<slug>/connections")
 def pm_connections_list(slug):
     from connections_registry import list_connections, alerts_for
