@@ -203,6 +203,40 @@ def _containers(slug: str, d: Path) -> list:
         return []
 
 
+def _systemd_services(slug: str, d: Path) -> list:
+    """Serviços systemd user cujo nome referencia o projeto (ex.: prometheus-*) — usado
+    quando o projeto roda local (systemd) em vez de Docker. Read-only."""
+    prefix = slug.lower().replace("_", "-")
+    dirname = d.name.lower().replace("_", "-")
+    roots = {prefix.split("-")[0], dirname.split("-")[0]}
+    try:
+        r = subprocess.run(
+            ["systemctl", "--user", "list-units", "--type=service", "--state=running",
+             "--no-legend", "--plain"],
+            capture_output=True, text=True, timeout=6,
+        )
+        out = []
+        for line in r.stdout.splitlines():
+            parts = line.split()
+            if not parts:
+                continue
+            unit = parts[0].lower()
+            unit_root = unit.split("-")[0] if "-" in unit else unit.removesuffix(".service")
+            # match restrito: prefixo exato + separador (evita falso-positivo 'backup-prometheus')
+            match = (
+                unit.startswith(prefix + "-") or unit.startswith(prefix + ".")
+                or unit.startswith(prefix + "@") or unit.startswith(dirname + "-")
+                or (unit_root in roots and unit_root != "system")
+            )
+            if match:
+                name = parts[0].removesuffix(".service")
+                status = " ".join(parts[1:3]) if len(parts) > 2 else "running"
+                out.append({"name": name, "status": status})
+        return out
+    except (subprocess.SubprocessError, OSError):
+        return []
+
+
 def scan_project(slug: str) -> dict:
     init_schema()
     start = time.time()
@@ -210,6 +244,8 @@ def scan_project(slug: str) -> dict:
     if not d:
         return {"project_slug": slug, "scanned": False, "reason": "projeto sem diretorio"}
     langs, docs_bytes, config_bytes = _walk_code(d)
+    containers = _containers(slug, d)
+    systemd_services = _systemd_services(slug, d) if not containers else []
     profile = {
         "languages": _languages_percent(langs),
         "docs_bytes": docs_bytes,
@@ -217,7 +253,8 @@ def scan_project(slug: str) -> dict:
         "frameworks": _frameworks(d),
         "databases": _databases(d),
         "git": _git_info(d),
-        "containers": _containers(slug, d),
+        "containers": containers,
+        "systemd_services": systemd_services,
     }
     duration_ms = int((time.time() - start) * 1000)
     con = get_conn()
@@ -225,15 +262,17 @@ def scan_project(slug: str) -> dict:
         con.execute(
             """INSERT INTO prometheus_tech_profile
                (project_slug, repo_path, languages_json, frameworks_json, databases_json,
-                containers_json, git_json, analyzed_at, scan_duration_ms)
-               VALUES (?,?,?,?,?,?,?,?,?)
+                containers_json, systemd_json, git_json, analyzed_at, scan_duration_ms)
+               VALUES (?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(project_slug) DO UPDATE SET
                  repo_path=excluded.repo_path, languages_json=excluded.languages_json,
                  frameworks_json=excluded.frameworks_json, databases_json=excluded.databases_json,
-                 containers_json=excluded.containers_json, git_json=excluded.git_json,
+                 containers_json=excluded.containers_json, systemd_json=excluded.systemd_json,
+                 git_json=excluded.git_json,
                  analyzed_at=excluded.analyzed_at, scan_duration_ms=excluded.scan_duration_ms""",
             (slug, str(d), json.dumps(profile["languages"]), json.dumps(profile["frameworks"]),
              json.dumps(profile["databases"]), json.dumps(profile["containers"]),
+             json.dumps(profile["systemd_services"]),
              json.dumps(profile["git"]), _now(), duration_ms),
         )
         con.commit()
@@ -253,7 +292,7 @@ def get_profile(slug: str) -> dict | None:
     try:
         row = con.execute(
             "SELECT project_slug, repo_path, languages_json, frameworks_json, databases_json, "
-            "containers_json, git_json, analyzed_at, scan_duration_ms "
+            "containers_json, systemd_json, git_json, analyzed_at, scan_duration_ms "
             "FROM prometheus_tech_profile WHERE project_slug = ?",
             (slug,),
         ).fetchone()
@@ -268,6 +307,7 @@ def get_profile(slug: str) -> dict | None:
         "frameworks": json.loads(row["frameworks_json"] or "[]"),
         "databases": json.loads(row["databases_json"] or "[]"),
         "containers": json.loads(row["containers_json"] or "[]"),
+        "systemd_services": json.loads(row["systemd_json"] or "[]"),
         "git": json.loads(row["git_json"] or "{}"),
         "analyzed_at": row["analyzed_at"],
         "scan_duration_ms": row["scan_duration_ms"],
