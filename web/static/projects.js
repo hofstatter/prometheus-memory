@@ -160,6 +160,8 @@
 
       <div id="pm-presence" style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:14px"></div>
 
+      <div id="pm-personas" style="margin-bottom:18px"></div>
+
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
         ${kpi('Eventos', events.length)}
         ${kpi('Issues abertas', rep ? rep.open_issues : 0)}
@@ -181,6 +183,7 @@
   loadPMStack(slug);
   loadPMSkills(slug);
   loadPMConnections(slug);
+  loadPMPersonas(slug);
   }
 
   function kanbanCol(title, items, color){
@@ -312,6 +315,68 @@
     const drawer = document.getElementById('projects-drawer');
     drawer.style.width = '0';
     drawer.setAttribute('aria-hidden', 'true');
+  }
+
+  // ── Personas (24h) — P5.3 ─────────────────────────────────────────
+  function loadPMPersonas(slug){
+    const el = document.getElementById('pm-personas');
+    if(!el) return;
+    const q = slug ? '?window=24&project=' + encodeURIComponent(slug) : '?window=24';
+    fetch('/api/pm/analytics/personas' + q).then(r => r.json()).then(d => {
+      renderPersonas(el, d);
+    }).catch(() => {
+      el.innerHTML = '';
+    });
+  }
+
+  const PERSONA_LABEL = {
+    arquiteto: 'Arquiteto', pedreiro: 'Pedreiro', inspector: 'Inspetor',
+    visionario: 'Visionário', explore: 'Explore', general: 'General'
+  };
+  const WORK_LABEL = { planning: 'planejamentos', implementation: 'execuções', review: 'revisões' };
+
+  function renderPersonas(el, d){
+    const list = (d.personas || []).filter(p => ['arquiteto','pedreiro','inspector','visionario'].includes(p.persona) || p.total >= 1);
+    if(!list.length){ el.innerHTML = ''; return; }
+    const total = d.total_events || 1;
+    const bars = list.slice().sort((a,b)=>b.total-a.total).map(p => {
+      const c = PERSONA_COLOR[p.persona] || '#94a3b8';
+      const label = PERSONA_LABEL[p.persona] || p.persona;
+      const parts = Object.entries(p.counts || {}).map(([k,v]) =>
+        `${v} ${WORK_LABEL[k] || k}`).join(' · ') || `${p.total} itens`;
+      const pct = p.pct != null ? p.pct : Math.round(100 * p.total / total * 10) / 10;
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px">
+          <span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:6px">${personaChip(p.persona)} ${esc(label)}</span>
+          <span style="color:var(--ink-muted)">${parts} · <b style="color:var(--ink)">${pct}%</b></span>
+        </div>
+        <div style="height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${c};border-radius:999px;transition:width .5s var(--ease-out)"></div>
+        </div>
+      </div>`;
+    }).join('');
+    const detail = (d.detail || []).slice(0, 12).map(x => {
+      const c = TYPE_COLOR[x.event_type] || '#94a3b8';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--hairline);font-size:12px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${c};flex:none"></span>
+        <span style="color:var(--ink-muted);flex:none">${esc(PERSONA_LABEL[x.persona] || x.persona)}</span>
+        <span style="color:var(--ink);flex:1;overflow-wrap:anywhere">${esc(x.title)}</span>
+        <span style="color:var(--ink-muted);flex:none">${fmtDT(x.created_at)}</span>
+      </div>`;
+    }).join('') || '<div style="color:var(--ink-muted);font-size:12px">sem eventos no período</div>';
+
+    el.innerHTML = `
+      <div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <h3 style="font-size:13px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em">📊 Personas (24h)</h3>
+          <span style="font-size:11px;color:var(--ink-muted)">${d.total_events || 0} eventos · janela ${d.window_hours}h · atualiza 5min</span>
+        </div>
+        ${bars}
+        <details style="margin-top:10px">
+          <summary style="cursor:pointer;font-size:12px;color:var(--ink-muted);user-select:none">Ver detalhes dos últimos eventos</summary>
+          <div style="margin-top:8px">${detail}</div>
+        </details>
+      </div>`;
   }
 
   // ── Stack & Runtime (Fase A3) ──────────────────────────────────────
@@ -647,6 +712,7 @@
   window.loadPMBoardsPresence = loadPMBoardsPresence;
   window.clearPMPolling = clearPMPolling;
   window.loadPMConnections = loadPMConnections;
+  window.loadPMPersonas = loadPMPersonas;
   window.loadPMStack = loadPMStack;
   window.scanPMStack = scanPMStack;
   window.loadPMSkills = loadPMSkills;
