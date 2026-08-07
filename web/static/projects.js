@@ -380,6 +380,31 @@
   }
 
   // ── Stack & Runtime (Fase A3) ──────────────────────────────────────
+  function loadPMGitLog(slug){
+    const el = document.getElementById('pm-git-log');
+    if(!el) return;
+    fetch('/api/pm/projects/' + encodeURIComponent(slug) + '/git/log?n=20').then(r => r.json()).then(d => {
+      if(!d.tracked){ el.innerHTML = '<div style="color:var(--ink-muted);font-size:12px">sem repo git</div>'; return; }
+      const commits = d.commits || [];
+      if(!commits.length){ el.innerHTML = '<div style="color:var(--ink-muted);font-size:12px">sem commits</div>'; return; }
+      el.innerHTML = commits.map(c => {
+        const msg = (c.message || '').split('\n')[0];
+        const typ = (msg.match(/^(feat|fix|docs|chore|refactor|test|deps|style|perf|build|ci|revert)/) || [])[0] || 'other';
+        const TC = {feat:'#22c55e', fix:'#f59e0b', docs:'#38bdf8', chore:'#94a3b8', refactor:'#a78bfa',
+                    test:'#0ea5e9', deps:'#f472b6', style:'#64748b', perf:'#f97316', build:'#94a3b8',
+                    ci:'#64748b', revert:'#ef4444', other:'#94a3b8'};
+        const cc = TC[typ] || '#94a3b8';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--hairline);font-size:12px">
+          <span style="font-family:var(--font-mono);font-size:11px;color:${cc};background:${cc}1a;border:1px solid ${cc}40;border-radius:6px;padding:1px 6px;flex:none">${esc(c.short)}</span>
+          <span style="color:var(--ink);flex:1;overflow-wrap:anywhere">${esc(msg)}</span>
+          <span style="color:var(--ink-muted);flex:none;white-space:nowrap">${esc(c.author.split(' ')[0])}</span>
+          <span style="color:var(--ink-muted);flex:none;white-space:nowrap;font-family:var(--font-mono);font-size:11px">${fmtDT(c.date)}</span>
+        </div>`;
+      }).join('');
+    }).catch(() => {
+      if(el) el.innerHTML = '<div style="color:var(--ink-muted);font-size:12px">erro ao carregar histórico</div>';
+    });
+  }
   const LANG_COLOR = {
     'Python':'#3572A5','TypeScript':'#3178c6','JavaScript':'#f1e05a','HTML':'#e34c26',
     'CSS':'#563d7c','SCSS':'#c6538c','Shell':'#89e051','SQL':'#e38c00','Go':'#00ADD8',
@@ -438,8 +463,9 @@
         <span style="background:var(--surface-2);border:1px solid var(--hairline);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink)">🌿 ${esc(git.branch || '?')}</span>
         ${git.remote ? `<span style="background:var(--surface-2);border:1px solid var(--hairline);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink-muted)">${esc(git.remote)}</span>` : ''}
         ${git.dirty_count > 0 ? `<span style="background:#eab3081a;border:1px solid #eab30840;border-radius:999px;padding:3px 10px;font-size:12px;color:#eab308;font-weight:600">dirty (${git.dirty_count})</span>` : '<span style="background:#22c55e1a;border:1px solid #22c55e40;border-radius:999px;padding:3px 10px;font-size:12px;color:#22c55e">clean</span>'}
+        <button data-pm-action="reload-git-log" data-slug="${esc(prof.project_slug || S.selected)}" class="btn-secondary" style="font-size:11px;padding:3px 10px">🔄 histórico</button>
       </div>
-      <div style="font-size:12px;color:var(--ink-muted);line-height:1.7">${(git.commits || []).map(c => esc(c)).join('<br>')}</div>`
+      <div id="pm-git-log" style="margin-top:4px">carregando histórico...</div>`
       : `<div style="background:#ef44441a;border:1px solid #ef444440;color:#ef4444;border-radius:var(--radius-md);padding:8px 12px;font-size:12px;font-weight:600">⚠ Não versionado (sem repo git local)</div>`;
 
     el.innerHTML = `
@@ -471,6 +497,7 @@
         <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Git</div>
         ${gitBlock}
       </div>`;
+    if(git.tracked) loadPMGitLog(prof.project_slug || S.selected);
   }
 
   // ── Skills do projeto (Fase B) ─────────────────────────────────────
@@ -701,6 +728,7 @@
       else if(action === 'create-conn') createPMConnection(slug);
       else if(action === 'suggest-skill') suggestPMSkill(slug);
       else if(action === 'approve-skill') approvePMSkill(t.getAttribute('data-sid'));
+      else if(action === 'reload-git-log') loadPMGitLog(slug);
     });
   });
 
@@ -713,6 +741,7 @@
   window.clearPMPolling = clearPMPolling;
   window.loadPMConnections = loadPMConnections;
   window.loadPMPersonas = loadPMPersonas;
+  window.loadPMGitLog = loadPMGitLog;
   window.loadPMStack = loadPMStack;
   window.scanPMStack = scanPMStack;
   window.loadPMSkills = loadPMSkills;
