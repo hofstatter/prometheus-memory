@@ -23,14 +23,13 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # código (a cópia viva de produção é a fonte; o repo público é a base)
-COPY app.py auth_guard.py connections_registry.py dedup.py editor_routes.py \
-     entity_store.py extractor.py graph_service.py memory.py notes_routes.py \
-     pm_routes.py projects_registry.py prometheus_db.py rag_engine.py rag_routes.py \
-     session_registry.py skills_builder.py skills_registry.py storage.py tech_profile.py \
-     telemetry_collector.py token_savings.py ./
-COPY templates ./templates
-COPY static ./static
-COPY scripts ./scripts
+COPY web/*.py ./
+COPY web/templates ./templates
+COPY web/static ./static
+COPY web/scripts ./scripts
+
+# pré-baixa o modelo de embeddings no build (evita travamento do boot na 1ª subida)
+RUN python3 -c "from fastembed import TextEmbedding; TextEmbedding(model_name='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')" 2>/dev/null || true
 
 # UID do usuário do host (herbert=1000) — sem corrupção de permissão nos binds
 RUN useradd -m -u 1000 -s /bin/bash herbert \
@@ -40,8 +39,6 @@ RUN useradd -m -u 1000 -s /bin/bash herbert \
 COPY supervisord.conf /etc/supervisor/conf.d/prometheus.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-USER herbert
 
 EXPOSE 8777 8765 8766
 
@@ -56,3 +53,5 @@ ENV HERMES_HOME=/data \
 VOLUME ["/data/mnemosyne"]
 
 ENTRYPOINT ["/entrypoint.sh"]
+# Container roda como ROOT (entrypoint configura crontab; supervisord dropa p/ herbert por programa:
+# web/mcp/api/telemetry user=herbert · cron user=root — ver supervisord.conf)

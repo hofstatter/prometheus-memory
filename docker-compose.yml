@@ -44,3 +44,4 @@ services:
 
 volumes:
   prometheus-data:
+    external: true   # volume nomeado EXATO (já criado + dados copiados via migrate_to_docker.sh)

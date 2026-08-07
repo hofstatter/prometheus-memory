@@ -49,7 +49,7 @@ CASOS = [
     ("Qual o ID do modelo do Pedreiro?",
      "O Pedreiro usa o deepseek-v4-flash para build de volume."),
     ("Qual a porta do MCP do Mnemosyne?",
-     "O MCP do Mnemosyne roda na porta 8765 com bearer bytex-memory-local-2026."),
+     "O MCP do Mnemosyne roda na porta 8765 com bearer token (MNEMOSYNE_MCP_TOKEN)."),
     ("Qual a versão do kernel da NB02?",
      "O kernel é o 7.0.0-28, rebootado recentemente."),
     ("Qual o nome do MCP de screenshots?",
