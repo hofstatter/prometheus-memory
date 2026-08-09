@@ -33,6 +33,18 @@ python setup.py          # Windows / macOS / Linux / Raspberry Pi
 
 El instalador detecta tu SO y arquitectura, pregunta el **idioma** (en/pt/es/zh), instala dependencias y registra el servicio según la plataforma (systemd en Linux, launchd en macOS, Task Scheduler en Windows).
 
+### Docker (todo-en-uno)
+
+Recomendado para servidores — un único contenedor ejecuta la Web UI, el servidor MCP y la API REST (supervisord):
+
+```bash
+git clone https://github.com/hofstatter/prometheus-memory.git
+cd prometheus-memory
+docker compose up -d          # http://localhost:8777 · MCP :8765 · REST :8766
+```
+
+Los datos viven en el volumen nombrado `prometheus-data` (nunca salen del host). Migración única de un store `~/.hermes/mnemosyne` existente: `./scripts/migrate_to_docker.sh`. Detalles en [docs/PLAN_P6_DOCKER.md](../PLAN_P6_DOCKER.md).
+
 ## Recursos en vivo
 
 - ⚡ **Monitor de recursos en tiempo real** — barras de GPU/RAM/disco + consumo del proceso en la barra lateral (actualiza cada 3s)
@@ -45,6 +57,14 @@ El instalador detecta tu SO y arquitectura, pregunta el **idioma** (en/pt/es/zh)
 | Linux ARM64 / Raspberry Pi 5 | ✅ |
 | macOS (Intel + Apple Silicon) | ✅ |
 | Windows 10/11 (x64) | ✅ |
+
+## Configuración
+
+Todas las opciones son variables de entorno — ver [.env.example](../../.env.example):
+
+| Variable | Valor por defecto | Función |
+|---|---|---|
+| `MNEMOSYNE_LEXICAL_GATE_MIN` | *histórico* (0.3 para ≥4 tokens) | Perilla de calidad del recall (float 0.0–1.0). Sobrescribe el gate léxico mínimo: `0.0` admite candidatos puramente vectoriales (recall-first — PT hit@5 43.8%→71.9%); vacío mantiene los umbrales históricos |
 
 ## Integraciones
 

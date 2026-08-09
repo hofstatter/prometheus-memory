@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0-dev] — 2026-08-09 (Docs: knob + Docker nos READMEs 4 idiomas)
+
+### Documentação
+
+- 📚 **READMEs (en/es/pt-BR/zh-CN):** knob `MNEMOSYNE_LEXICAL_GATE_MIN` documentado na
+  seção de configuração (default = thresholds históricos; `0.0` = recall-first, PT hit@5
+  43.8%→71.9%) + seção **Docker all-in-one** no Quick Start (`docker compose up -d`,
+  volume `prometheus-data`, `migrate_to_docker.sh`). `.env.example` ganhou a linha comentada do knob.
+
 ## [0.3.0-dev] — 2026-08-04 (Parte 5 — Régua PT + spike e5-large: rejeitado)
 
 ### Implementado — asset contínuo

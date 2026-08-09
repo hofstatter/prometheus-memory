@@ -108,6 +108,19 @@ python setup.py          # 通用：Windows / macOS / Linux / 树莓派
 安装程序会自动检测操作系统/架构，询问您的**语言**（en/pt/es/zh），安装依赖，
 并按平台注册 Web UI（Linux 使用 systemd，macOS 使用 launchd，Windows 提供任务计划程序说明）。
 
+### Docker（一体化）
+
+服务器推荐——单个容器即可运行 Web UI、MCP 服务器和 REST API（supervisord）：
+
+```bash
+git clone https://github.com/hofstatter/prometheus-memory.git
+cd prometheus-memory
+docker compose up -d          # http://localhost:8777 · MCP :8765 · REST :8766
+```
+
+数据存放在命名卷 `prometheus-data` 中（绝不离开主机）。已有 `~/.hermes/mnemosyne` 存储的一次性迁移：
+`./scripts/migrate_to_docker.sh`。详见 [docs/PLAN_P6_DOCKER.md](../../docs/PLAN_P6_DOCKER.md)。
+
 ### 支持的平台
 
 | 平台 | 状态 |
@@ -141,6 +154,7 @@ Web 界面会自动检测浏览器语言——**English、Português、Español�
 | `PROMETHEUS_PROJECTS` | — | 已知项目（逗号分隔） |
 | `PROMETHEUS_EXCLUDE` | — | 在界面中隐藏的内容（逗号分隔） |
 | `FIRECRAWL_API_KEY` | — | 抓取备用方案（可选） |
+| `MNEMOSYNE_LEXICAL_GATE_MIN` | *历史值*（≥4 token 时为 0.3） | 召回质量旋钮（浮点 0.0–1.0）。覆盖最小词法重叠门槛：`0.0` 接受纯向量候选（召回优先——PT hit@5 43.8%→71.9%）；留空则保持上游历史阈值 |
 
 ## L0→L3 流水线
 

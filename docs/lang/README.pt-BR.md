@@ -114,6 +114,19 @@ O instalador detecta seu SO/arquitetura, pergunta o **idioma** (en/pt/es/zh),
 instala dependências e registra a Web UI por plataforma (systemd no Linux,
 launchd no macOS, instruções de Task Scheduler no Windows).
 
+### Docker (all-in-one)
+
+Recomendado para servidores — um único container roda a Web UI, o servidor MCP e a API REST (supervisord):
+
+```bash
+git clone https://github.com/hofstatter/prometheus-memory.git
+cd prometheus-memory
+docker compose up -d          # http://localhost:8777 · MCP :8765 · REST :8766
+```
+
+Os dados ficam no volume nomeado `prometheus-data` (nunca saem do host). Migração única de um store
+`~/.hermes/mnemosyne` existente: `./scripts/migrate_to_docker.sh`. Detalhes em [docs/PLAN_P6_DOCKER.md](../../docs/PLAN_P6_DOCKER.md).
+
 ### Plataformas suportadas
 
 | Plataforma | Status |
@@ -167,6 +180,7 @@ Todas as opções são variáveis de ambiente — ver [.env.example](../../.env.
 | `PROMETHEUS_PROJECTS` | — | Projetos conhecidos (vírgula) |
 | `PROMETHEUS_EXCLUDE` | — | Conteúdos a excluir da UI (vírgula) |
 | `FIRECRAWL_API_KEY` | — | Fallback de scraping (opcional) |
+| `MNEMOSYNE_LEXICAL_GATE_MIN` | *histórico* (0,3 p/ ≥4 tokens) | Botão de qualidade do recall (float 0,0–1,0). Sobrescreve o gate lexical mínimo: `0.0` admite candidatos puramente vetoriais (recall-first — régua PT hit@5 43,8%→71,9%); vazio mantém os thresholds históricos |
 
 ## Pipeline L0→L3
 
