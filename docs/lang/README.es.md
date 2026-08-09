@@ -64,6 +64,19 @@ Todas las opciones son variables de entorno — ver [.env.example](../../.env.ex
 
 | Variable | Valor por defecto | Función |
 |---|---|---|
+| `DEEPSEEK_API_KEY` | — | **Obligatoria** para L2/L3 (escenas, persona, skills) |
+| `PROMETHEUS_HOST` | `127.0.0.1` | Bind de la Web UI (usa `0.0.0.0` para LAN, bajo tu responsabilidad) |
+| `PROMETHEUS_PORT` | `8777` | Puerto de la Web UI |
+| `MNEMOSYNE_HOME` | `~/.hermes/mnemosyne` | Directorio de datos de Mnemosyne |
+| `PROMETHEUS_NOTES_DIR` | `~/notes` | Directorio de notas |
+| `PROMETHEUS_USER` | `$USER` | Nombre usado en las memorias de persona |
+| `PROMETHEUS_PROJECT` | `geral` | Proyecto por defecto de las memorias |
+| `PROMETHEUS_PASSWORD` | — | **Contraseña de login de la UI** (obligatoria cuando bind ≠ localhost) |
+| `PROMETHEUS_TOKEN` | — | Token Bearer de la API para agentes/scripts |
+| `PROMETHEUS_PROTECT_READS` | `false` | `true` = toda la UI requiere login |
+| `PROMETHEUS_PROJECTS` | — | Proyectos conocidos (separados por coma) |
+| `PROMETHEUS_EXCLUDE` | — | Contenidos a ocultar de la UI (separados por coma) |
+| `FIRECRAWL_API_KEY` | — | Fallback de scraping (opcional) |
 | `MNEMOSYNE_LEXICAL_GATE_MIN` | *histórico* (0.3 para ≥4 tokens) | Perilla de calidad del recall (float 0.0–1.0). Sobrescribe el gate léxico mínimo: `0.0` admite candidatos puramente vectoriales (recall-first — PT hit@5 43.8%→71.9%); vacío mantiene los umbrales históricos |
 
 ## Integraciones
