@@ -113,6 +113,18 @@ python setup.py          # universal: Windows / macOS / Linux / Raspberry Pi
 
 The installer auto-detects your OS/arch, asks your **language** (en/pt/es/zh), installs dependencies and registers the Web UI per platform (systemd on Linux, launchd on macOS, Task Scheduler instructions on Windows).
 
+### Docker (all-in-one)
+
+Recommended for servers — a single container runs the Web UI, MCP server and REST API (supervisord):
+
+```bash
+git clone https://github.com/hofstatter/prometheus-memory.git
+cd prometheus-memory
+docker compose up -d          # http://localhost:8777 · MCP :8765 · REST :8766
+```
+
+Data lives in the named `prometheus-data` volume (never leaves the host). First-time migration of an existing `~/.hermes/mnemosyne` store: `./scripts/migrate_to_docker.sh`. See [docs/PLAN_P6_DOCKER.md](docs/PLAN_P6_DOCKER.md) for details.
+
 ### Platform support
 
 | Platform | Status |
@@ -167,6 +179,7 @@ All options are environment variables — see [.env.example](.env.example):
 | `PROMETHEUS_PROJECTS` | — | Known projects (comma-separated) |
 | `PROMETHEUS_EXCLUDE` | — | Content to hide from the UI (comma-separated) |
 | `FIRECRAWL_API_KEY` | — | Scraping fallback (optional) |
+| `MNEMOSYNE_LEXICAL_GATE_MIN` | *histórico* (0.3 p/ ≥4 tokens) | Recall quality knob (float 0.0–1.0). Overrides the minimum lexical overlap gate: `0.0` admits purely-vector candidates (recall-first — PT hit@5 43.8%→71.9%), unset keeps the historical thresholds |
 
 ## L0→L3 Pipeline
 
