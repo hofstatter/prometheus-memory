@@ -10,5 +10,5 @@ beautifulsoup4==4.14.*
 lxml==6.1.*
 gunicorn==26.*
 pytest==8.3.*
-mnemosyne-memory[mcp]==3.15.1
+mnemosyne-memory[mcp] @ git+https://github.com/mnemosyne-oss/mnemosyne@c4344f2d8a02d7fff32b420eb708407c9f183847
 uvicorn==0.51.*
