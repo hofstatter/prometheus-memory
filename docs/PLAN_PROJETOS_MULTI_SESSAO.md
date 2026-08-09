@@ -79,7 +79,7 @@ Todo write (MCP ou REST) precisa carregar:
   "project_slug": "evscar",
   "agent_id": "pedreiro",
   "author_id": "herbert",
-  "cwd": "/home/herbert/Projetos/evscar",
+  "cwd": "~/Projetos/evscar",
   "git_remote": "github.com/hofstatter/evscar",
   "client_event_id": "oc_123:2026-08-03T04:12:33Z:abc"
 }

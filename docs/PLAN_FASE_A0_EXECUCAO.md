@@ -277,7 +277,7 @@ Setup como `test_multiagent.py`: `os.environ["PROMETHEUS_DB"]="/tmp/test-lanes.d
 | T2 | Mesmo projeto, harnesses diferentes (opencode + codex) | memória da lane `proj:evscar` visível nas duas sessões |
 | T3 | Idempotência | mesmo `client_event_id` 2× → 1 evento + 1 ingest (duplicate=true na 2ª) |
 | T4 | Presence | heartbeat atualiza `last_seen_at`; sessão sem heartbeat > threshold vira `stale` |
-| T5 | Resolver | `cwd="/home/herbert/Projetos/evscar"` → slug `evscar` conf 0.95; explícito vence; sem sinais → `geral` conf 0.4 + needs_review |
+| T5 | Resolver | `cwd="~/Projetos/evscar"` → slug `evscar` conf 0.95; explícito vence; sem sinais → `geral` conf 0.4 + needs_review |
 | T6 | Backward compat | `memory.remember("x", agent_id="atlas")` e `memory.recall("x", agent_id="atlas")` funcionam como antes |
 | T7 | Report | 3 eventos `implementation done` + 1 `issue blocked` → progress > 0 e open_issues >= 1 |
 
@@ -286,9 +286,9 @@ Setup como `test_multiagent.py`: `os.environ["PROMETHEUS_DB"]="/tmp/test-lanes.d
 ```bash
 # 1. duas sessões em projetos diferentes
 curl -s -X POST localhost:8777/api/pm/sessions/start -H 'Content-Type: application/json' \
-  -d '{"harness":"opencode","harness_session_id":"a1","project_slug":"evscar","agent_id":"pedreiro","cwd":"/home/herbert/Projetos/evscar"}'
+  -d '{"harness":"opencode","harness_session_id":"a1","project_slug":"evscar","agent_id":"pedreiro","cwd":"~/Projetos/evscar"}'
 curl -s -X POST localhost:8777/api/pm/sessions/start -H 'Content-Type: application/json' \
-  -d '{"harness":"opencode","harness_session_id":"b2","project_slug":"provador-digital","agent_id":"pedreiro","cwd":"/home/herbert/Projetos/provador-digital"}'
+  -d '{"harness":"opencode","harness_session_id":"b2","project_slug":"provador-digital","agent_id":"pedreiro","cwd":"~/Projetos/provador-digital"}'
 
 # 2. evento idempotente
 curl -s -X POST localhost:8777/api/pm/events -H 'Content-Type: application/json' \

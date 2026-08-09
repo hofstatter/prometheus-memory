@@ -42,7 +42,7 @@ O "GLM-4.7V" **não existe** no Z.AI Coding Plan. Testes diretos na API (credenc
 - `~/.config/opencode/agent/visionario.md`: `model: zai-coding-plan/glm-4.5v`
 - `opencode.jsonc`: declarar modelo custom `glm-4.5v` no provider `zai-coding-plan` (se necessário — validar antes)
 - Cascata: AGENTS.md, GUARDRAILS (v5.3), FLUXO_BIMODELO (v6.3), CONTEXT.md, STATE.md (corrigir `glm-4.7` → `glm-4.5v`)
-- **Aceite:** após restart, subagent `visionario` analisa imagem real (teste com `/home/herbert/graph-f1-real.png`)
+- **Aceite:** após restart, subagent `visionario` analisa imagem real (teste com `~/graph-f1-real.png`)
 
 ### Fase 1 — F1.1 Visual (SMALL, só `templates/index.html`)
 1. **Switch de layout:** `nodes.length <= 40` → G6 `circular` (ordering `degree`, radius `min(cw,ch)/2 - 60`); senão `d3-force` atual
