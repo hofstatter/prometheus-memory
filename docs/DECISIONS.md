@@ -259,3 +259,24 @@ tokens → candidatos só-vetoriais morrem). Pacote instalado de `AxDSan/mnemosy
 `memory_embeddings` (sessão 37).
 
 **Status:** fechada — registrada em PLAN_QUALIDADE_RECALL_P3.md §Follow-up upstream.
+
+---
+
+## 09/08/2026 — Upstream: consolidação episódica vaza `<think>` cru do LLM (D14)
+
+**Contexto:** durante a hygiene da sessão 48 (gate `MNEMOSYNE_LEXICAL_GATE_MIN=0.0` em
+produção), a varredura de ruído encontrou **11 memórias `episodic_memory` cujo conteúdo
+começa com `<think>` cru** — o raciocínio interno do LLM da consolidação do sono
+(`sleep_consolidation`) foi gravado no lugar/antes do resumo real. Ex.: `74622ea2…`
+("I think I have enough…") e `b955d642…` (raciocínio sobre como resumir). 8 foram
+deletadas (lixo puro); 4 preservadas por conterem resumo real embutido após o think
+(`286520c6…`, `9667ecc4…`, `9e8dca84…`, `b35bf77e…`). Não é efeito do knob (é da etapa
+`sleep`), mas o gate 0.0 faz essas memórias ressurgirem no recall (overlap de tokens).
+
+**Decisão:** NÃO corrigir localmente (está em `site-packages`/upstream). Documentar o
+achado com evidências e um draft de issue upstream em
+`docs/UPSTREAM_THINK_CONSOLIDATION.md`. Sugestão de fix upstream: na
+`consolidate_to_episodic` (ou no caller `sleep`), remover o bloco `<think>…</think>` do
+conteúdo antes do INSERT (regex ou strip no retorno do LLM).
+
+**Status:** aberta — issue upstream pendente (draft em docs/UPSTREAM_THINK_CONSOLIDATION.md).
