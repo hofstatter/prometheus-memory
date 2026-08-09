@@ -35,6 +35,8 @@ services:
       PROMETHEUS_PORT: "8777"
       OPENCODE_CONFIG_DIR: /telemetry/config
       OPENCODE_DATA_DIR: /telemetry/share
+      # D9/D11: knob do gate lexical (PR #639, merged upstream) — recall-first
+      MNEMOSYNE_LEXICAL_GATE_MIN: "0.0"
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8777/health', timeout=3)"]
       interval: 30s

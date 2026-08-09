@@ -5,6 +5,38 @@ plano. Seção nova no topo. Cada entrada: contexto, decisão, evidência, statu
 
 ---
 
+## 08/08/2026 — D9–D12: knob `MNEMOSYNE_LEXICAL_GATE_MIN` (PR #639 MERGED upstream) em produção
+
+**Contexto:** PR #639 (autoria hofstatter) **mergeado no upstream** `mnemosyne-oss/mnemosyne`
+(commit `c4344f2d`, 08/08 12:28Z) — o knob do gate lexical existe no `main`, mas **não em release**
+(PyPI ainda em v3.15.1). Plano: `docs/PLAN_MNEMOSYNE_GATE_LEXICAL.md`.
+
+- **D9 — Instalar do `main` pinado no SHA do merge (#639), não aguardar release.**
+  `pip install "mnemosyne-memory[mcp] @ git+...@c4344f2d8a02d7fff32b420eb708407c9f183847"` —
+  determinístico e reversível (imagem `pre-knob-20260808` = rollback). Alternativa registrada:
+  aguardar 3.15.2/3.16.0 se o Herbert preferir adiar. O pino no SHA do merge minimiza o delta
+  (69 commits no `main` incluem mudanças de comportamento: fail-loud dim #518/#521, widening
+  sqlite-vec #608, cache invalidation #566).
+- **D10 — Env do knob no bloco `environment` do compose (versionado), não no `.env` de produção.**
+  O `.env` (`~/Projetos/web/.env`) carrega secrets e é compartilhado; o knob é config de deploy.
+- **D11 — Valor inicial `0.0` (recall-first), decidido por medição.** Se a régua PT mostrar queda
+  de precisão > 2pp, subir em degraus (0.15 → 0.3) e escolher o menor que preserve ganho.
+- **D12 — Régua: substituir o monkeypatch `P5_BYPASS_LEXICAL` pelo knob oficial.**
+  O bypass local (piso 0.25 via monkeypatch de `_lexical_relevance`) vira histórico — sem
+  compat retroativa; o eval passa a repassar `MNEMOSYNE_LEXICAL_GATE_MIN` real.
+
+**Status:** fechadas (08/08/2026, execução completa) — D9 pino git SHA `c4344f2d` aplicado
+(requisito: `git` adicionado ao Dockerfile slim) · D10 env `MNEMOSYNE_LEXICAL_GATE_MIN: "0.0"`
+no bloco `environment` do compose · D11 **valor 0.0 confirmado por medição** — régua PT:
+default 43.8% → 0.15: 65.6% → **0.0: 71.9%** (hit@32) · D12 régua usa o knob real (bypass
+`P5_BYPASS_LEXICAL` mantido só p/ comparação histórica). Produção: container `prometheus-memory`
+3.16.0 healthy, health 200, MCP/API OK, 367 memórias preservadas. Ajustes operacionais no
+3.16.0: `mnemosyne config set sync_roles user` + `skip_contexts cron,flush,subagent,background,skill_loop`
+(aviso legado) + `chown herbert /data/cache` (tree cache fastembed). Nota: gate 0.0 admitiu 1
+memória-ruído (`<think>`) em recall real — candidato de hygiene, não regressão.
+
+---
+
 ## 06/08/2026 — Sessão 44: D6 roteamento visual · D7 doctor.* fora do repo · D8 cascata de consulta externa
 
 **Contexto (sessão 44, pré-commit público F1/F1.1):** Herbert aprovou (1) commit do F1/F1.1 no

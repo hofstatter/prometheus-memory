@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     DEBIAN_FRONTEND=noninteractive
 
-# sistema: tesseract (OCR), sqlite3-vec deps, supervisor
+# sistema: tesseract (OCR), sqlite3-vec deps, supervisor, git (pip install de pino git+)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-por \
@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-dev \
     supervisor \
     cron \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
