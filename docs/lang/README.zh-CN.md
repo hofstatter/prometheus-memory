@@ -183,7 +183,7 @@ Web 界面会自动检测浏览器语言——**English、Português、Español�
 ## 实时资源监控
 
 - ⚡ **实时资源监控** — 时间线侧边栏实时显示 GPU/CPU/内存/磁盘使用率条 + 进程占用（每 3 秒更新）
-- 🧠 **自动会话检查点** — 每 3 分钟，所有对话内容自动摘要（DeepSeek）并以原文形式存入 Mnemosyne 记忆（`source=checkpoint`/`checkpoint-verbatim`，标签 `[checkpoint-cycle:...]`）；**检查点标签页** 展示简报 + 原文；凭据在显示时被遮蔽（`***(senha)***`）
+- 🧠 **自动会话检查点** — 每 3 分钟，所有对话内容自动摘要（DeepSeek）并以原文形式存入 Mnemosyne 记忆（`source=checkpoint`/`checkpoint-verbatim`，标签 `[checkpoint-cycle:...]`）；**检查点标签页** 展示简报 + 原文，**每 1 分钟自动刷新**；凭据在显示时被遮蔽（`***(senha)***`）
 
 ## 集成
 
