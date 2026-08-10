@@ -31,6 +31,14 @@
     '📝 Notes': {en:'📝 Notes', es:'📝 Notas', zh:'📝 笔记'},
     // aba Projetos (Fase A)
     '🗂️ Projetos': {en:'🗂️ Projects', es:'🗂️ Proyectos', zh:'🗂️ 项目'},
+    // aba Checkpoints (sessão 62/63)
+    '🧠 Checkpoints': {en:'🧠 Checkpoints', es:'🧠 Checkpoints', zh:'🧠 检查点'},
+    '🧠 Checkpoints automáticos': {en:'🧠 Automatic Checkpoints', es:'🧠 Checkpoints automáticos', zh:'🧠 自动检查点'},
+    'Briefings de retomada gerados automaticamente a cada 3 min pelo serviço de checkpoint (PLAN_CHECKPOINT_AUTO.md). Fonte: memórias do Mnemosyne com source checkpoint/checkpoint-verbatim.': {en:'Retrieval briefings generated automatically every 3 min by the checkpoint service (PLAN_CHECKPOINT_AUTO.md). Source: Mnemosyne memories with source checkpoint/checkpoint-verbatim.', es:'Briefings de recuperación generados automáticamente cada 3 min por el servicio de checkpoint (PLAN_CHECKPOINT_AUTO.md). Fuente: memorias de Mnemosyne con source checkpoint/checkpoint-verbatim.', zh:'由检查点服务每 3 分钟自动生成的检索简报（PLAN_CHECKPOINT_AUTO.md）。来源：Mnemosyne 记忆中 source 为 checkpoint/checkpoint-verbatim 的内容。'},
+    '↻ Atualizar': {en:'↻ Refresh', es:'↻ Actualizar', zh:'↻ 刷新'},
+    '🧠 briefing': {en:'🧠 briefing', es:'🧠 informe', zh:'🧠 简报'},
+    '📄 verbatim': {en:'📄 verbatim', es:'📄 verbatim', zh:'📄 原文'},
+    'Nenhum checkpoint ainda. O serviço roda a cada 3 min automaticamente.': {en:'No checkpoints yet. The service runs automatically every 3 min.', es:'Aún no hay checkpoints. El servicio se ejecuta automáticamente cada 3 min.', zh:'暂无检查点。服务每 3 分钟自动运行。'},
     '🗂️ Boards': {en:'🗂️ Boards', es:'🗂️ Tableros', zh:'🗂️ 看板'},
     'Sem projetos ainda — registre um evento em /api/pm/events': {en:'No projects yet — register an event via /api/pm/events', es:'Aún no hay proyectos — registra un evento en /api/pm/events', zh:'暂无项目 — 通过 /api/pm/events 注册事件'},
     'Nenhuma sessão ativa agora': {en:'No active sessions right now', es:'No hay sesiones activas ahora', zh:'当前无活动会话'},

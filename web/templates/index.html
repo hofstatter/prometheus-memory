@@ -559,6 +559,20 @@ function showRAG(){resetViews();currentView='rag';var rv=document.getElementById
 function showSkills(){resetViews();currentView='skills';var sv=document.getElementById('skills-view');sv.style.display='flex';sv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-skills').className='btn-active';loadSkills()}
 function showProjects(){resetViews();currentView='projects';var pv=document.getElementById('projects-view');pv.style.display='flex';pv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-projects').className='btn-active';if(window.loadPMBoards){loadPMBoards();loadPresenceLoop()}}
 function showCheckpoints(){resetViews();currentView='checkpoints';var cv=document.getElementById('checkpoints-view');cv.style.display='block';cv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-checkpoints').className='btn-active';loadCheckpoints();window._cpTimer=setInterval(function(){if(currentView==='checkpoints')loadCheckpoints()},60000)}
+function formatUSTs(iso){
+  // converte 'YYYY-MM-DD HH:MM:SS' (UTC do banco) p/ horário local, formato americano
+  // ex.: 'Aug 10, 2026 - 8:21 PM'
+  if(!iso) return '';
+  var s=(iso||'').replace('T',' ').substring(0,19);
+  var d=new Date(s.replace(/-/g,'/')+' UTC');
+  if(isNaN(d)) return iso;
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var h=d.getHours(), m=d.getMinutes();
+  var ampm=h>=12?'PM':'AM';
+  h=h%12; if(h===0)h=12;
+  var mm=m<10?'0'+m:m;
+  return months[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' - '+h+':'+mm+' '+ampm;
+}
 function loadCheckpoints(){
   var list=document.getElementById('checkpoints-list');
   list.innerHTML='<div style="color:var(--ink-muted);font-size:12px">carregando...</div>';
@@ -576,7 +590,7 @@ function loadCheckpoints(){
       return '<div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:12px;padding:14px 16px">'
         +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px;color:'+color+'">'
         +'<span style="font-weight:600">'+badge+'</span>'
-        +'<span style="color:var(--ink-muted)">'+(m.created_at||'')+'</span>'
+        +'<span style="color:var(--ink-muted)">'+formatUSTs(m.created_at)+'</span>'
         +'<span style="color:var(--ink-muted)">·</span><span style="color:var(--ink-muted)">'+Math.round((m.importance||0)*100)+'%</span>'
         +'</div><div style="font-size:13px;line-height:1.6;color:var(--ink)">'+body+'</div></div>'
     }).join('');

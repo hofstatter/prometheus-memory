@@ -4,7 +4,7 @@
 
 ### Features
 
-- 🧠 **Automatic session checkpoints** — `checkpoint_service.py` (host, systemd timer a cada 3 min) resume toda conversa (DeepSeek) + guarda verbatim no Mnemosyne (`source=checkpoint`/`checkpoint-verbatim`, tag `[checkpoint-cycle:...]`); **aba Checkpoints** na UI renderiza briefings + verbatim com **auto-refresh a cada 1 min**; **credenciais mascaradas na exibição** (`***(senha)***`) em checkpoints/timeline/search/recall/detail; miner omite parts sensíveis (write-time).
+- 🧠 **Automatic session checkpoints** — `checkpoint_service.py` (host, systemd timer a cada 3 min) resume toda conversa (DeepSeek) + guarda verbatim no Mnemosyne (`source=checkpoint`/`checkpoint-verbatim`, tag `[checkpoint-cycle:...]`); **aba Checkpoints** na UI renderiza briefings + verbatim com **auto-refresh a cada 1 min** e **horário local em formato US (AM/PM)**; **atribuição de projeto híbrida** (projetos conhecidos + sinais em ordem de força + keywords `projeto`/`site`; análise de repo externo/Github NÃO registra projeto local; fallback `[global]`); **credenciais mascaradas na exibição** (`***(senha)***`) em checkpoints/timeline/search/recall/detail; miner omite parts sensíveis (write-time).
 - ⚡ **Painel Recursos completo** — GPU restaurada no container (devices NVIDIA + nvidia-smi/libs do host) + **CPU% novo** (psutil//proc/stat) → 5 barras (GPU/CPU/RAM/HD/processo).
 - 📄 **Docs 4 idiomas** — READMEs en/pt-BR/es/zh-CN ganham a seção Checkpoints + screenshot `docs/SCREENSHOTS/checkpoints.png`.
 
