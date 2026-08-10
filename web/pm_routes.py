@@ -308,7 +308,7 @@ def pm_project_tokens(slug):
 @pm_bp.get("/projects/<slug>/mcps")
 def pm_project_mcps(slug):
     """MCPs do projeto (P5.5) — detecta opencode.jsonc (bloco mcp) e docker-compose services."""
-    from prometheus_db import get_conn
+    from prometheus_db import get_conn, resolve_repo_path
     import json as _json
     try:
         con = get_conn()
@@ -320,7 +320,7 @@ def pm_project_mcps(slug):
             con.close()
     except Exception:
         row = None
-    rp = (row[0] if row else None) or ""
+    rp = resolve_repo_path((row[0] if row else None) or "") or ""
     mcps = []
     docker = []
     if rp:
@@ -389,7 +389,7 @@ def pm_git_log(slug):
     except (TypeError, ValueError):
         n = 20
     n = max(1, min(n, 100))
-    from prometheus_db import get_conn
+    from prometheus_db import get_conn, resolve_repo_path
     try:
         con = get_conn()
         try:
@@ -401,7 +401,7 @@ def pm_git_log(slug):
             con.close()
     except Exception:
         row = None
-    rp = (row[0] if row else None) or ""
+    rp = resolve_repo_path((row[0] if row else None) or "") or ""
     if not rp or not Path(rp).joinpath(".git").exists():
         return jsonify({"tracked": False, "commits": [], "repo_path": rp})
     import subprocess

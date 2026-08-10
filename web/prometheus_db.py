@@ -10,6 +10,29 @@ from pathlib import Path
 
 MNEMOSYNE_HOME = Path(os.environ.get("MNEMOSYNE_HOME", Path.home() / ".hermes" / "mnemosyne"))
 DB_PATH = Path(os.environ.get("PROMETHEUS_DB", MNEMOSYNE_HOME / "data" / "mnemosyne.db"))
+PROJECTS_ROOT = Path(os.environ.get("PROMETHEUS_PROJECTS_ROOT", str(Path.home() / "Projetos")))
+
+
+def resolve_repo_path(repo_path: str | None) -> str | None:
+    """Resolve um repo_path do banco para um caminho REAL no filesystem atual.
+
+    No container (P6), os projetos montados em PROMETHEUS_PROJECTS_ROOT (/data/projetos)
+    enquanto o banco guarda paths do host (~/Projetos/...). Tenta o path como está;
+    se não existir, remapeia por basename sob PROJECTS_ROOT (projetos são filhos diretos).
+    Retorna None se não houver caminho válido.
+    """
+    if not repo_path:
+        return None
+    p = Path(repo_path)
+    if p.exists():
+        return str(p.resolve())
+    cand = PROJECTS_ROOT / p.name
+    try:
+        if cand.exists() and cand.is_relative_to(PROJECTS_ROOT.resolve()):
+            return str(cand.resolve())
+    except OSError:
+        pass
+    return None
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS prometheus_projects (

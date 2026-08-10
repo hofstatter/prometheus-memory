@@ -24,11 +24,24 @@ services:
       # OpenCode do host (READ-ONLY — coletor de telemetria P5.1)
       - ${HOME}/.config/opencode:/telemetry/config:ro
       - ${HOME}/.local/share/opencode:/telemetry/share:ro
+      # Docker socket (READ-ONLY — painel lê `docker ps` via Engine API; D10 PLAN_TELEMETRIA_PUSH_MCP)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # binário nvidia-smi do host (monitoramento GPU — driver 595.84 vive no host)
+      - /usr/bin/nvidia-smi:/usr/bin/nvidia-smi:ro
+      # libs NVIDIA do host (libnvidia-ml.so etc.) — necessárias p/ o nvidia-smi
+      - /usr/lib/x86_64-linux-gnu/libnvidia-ml.so:/usr/lib/x86_64-linux-gnu/libnvidia-ml.so:ro
+      - /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1:/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1:ro
+      - /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.595.84:/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.595.84:ro
     env_file:
       - ${HOME}/Projetos/web/.env
     environment:
       HERMES_HOME: /data
       MNEMOSYNE_HOME: /data/mnemosyne
+      # Cache do modelo de embeddings PERSISTENTE (volume prometheus-data) — /data/cache
+      # e /tmp são efêmeros no rebuild e o re-download quebra o recall (>30s timeout).
+      # mnemosyne 3.16.0 respeita MNEMOSYNE_FASTEMBED_CACHE_DIR.
+      MNEMOSYNE_FASTEMBED_CACHE_DIR: /data/mnemosyne/fastembed-cache
+      FASTEMBED_CACHE_PATH: /data/mnemosyne/fastembed-cache
       PROMETHEUS_NOTES_DIR: /data/notes
       PROMETHEUS_PROJECTS_ROOT: /data/projetos
       PROMETHEUS_HOST: 0.0.0.0
@@ -37,6 +50,15 @@ services:
       OPENCODE_DATA_DIR: /telemetry/share
       # D9/D11: knob do gate lexical (PR #639, merged upstream) — recall-first
       MNEMOSYNE_LEXICAL_GATE_MIN: "0.0"
+      # GPU (monitoramento ⚡ Recursos): expõe os devices NVIDIA + o binário nvidia-smi do host
+      # (o driver 595.84 vive no host; o container só precisa do utilitário + devices p/ ler).
+      NVIDIA_VISIBLE_DEVICES: all
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8777/health', timeout=3)"]
       interval: 30s

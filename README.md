@@ -54,7 +54,8 @@ literally **gets smarter with every cycle**, with zero human intervention.
 - ✏️ **Inline Editor** — edit and delete memories directly in the UI (7 tabs + editor modal)
 - 🗄️ **Storage layer** — SQLite by default (WAL), PostgreSQL-ready interface (`DATABASE_URL`) landing in v0.2
 - 💾 **Log offloading** — large tool outputs become refs (up to 61% token reduction)
-- ⚡ **Live resource monitor** — real-time GPU/RAM/disk bars + process usage in the Timeline sidebar (updates every 3s)
+- ⚡ **Live resource monitor** — real-time GPU/CPU/RAM/disk bars + process usage in the Timeline sidebar (updates every 3s)
+- 🧠 **Automatic session checkpoints** — every 3 min, everything discussed is summarized (DeepSeek) + stored verbatim as Mnemosyne memories (`source=checkpoint`/`checkpoint-verbatim`, `[checkpoint-cycle:...]` tag); **Checkpoints tab** renders briefings + verbatim; credentials are masked at display time (`***(senha)***`)
 - 🧠 **Skill generation** — detects recurring patterns in scenes and generates reusable skills
 - 🗂️ **Projects tab (v0.2)** — per-project operational dashboard: kanban, timeline, progress bar and **real-time agent presence** (active/idle/stale via heartbeat), driven by lanes `sess:*`/`proj:*`/`agent:*` and `/api/pm/*` (idempotent `client_event_id`, Project Resolver with confidence)
 - 🔑 **Connections & Costs (v0.2)** — per-project API keys/MCPs/subscriptions: read-only `.env` scan (SHA-256 fingerprint, **values never stored/exposed**), "paid but unused" and "expiring" alerts, shared-key detection, global monthly cost summary
@@ -213,6 +214,8 @@ your Mnemosyne store — not an artificial projection:
 | Timeline | Graph | Canvas | RAG | Notes | Projects |
 |---|---|---|---|---|---|
 | ![Timeline](docs/SCREENSHOTS/timeline.png) | ![Graph](docs/SCREENSHOTS/graph.png) | ![Canvas](docs/SCREENSHOTS/canvas.png) | ![RAG](docs/SCREENSHOTS/rag.png) | ![Notes](docs/SCREENSHOTS/notes.png) | ![Projects](docs/SCREENSHOTS/projetos.png) |
+
+![Checkpoints (automatic session checkpoints)](docs/SCREENSHOTS/checkpoints.png)
 
 ## API (REST)
 
