@@ -131,7 +131,66 @@ def timeline():
     for m in memories:
         m["project"] = extract_project(m.get("content", ""))
     memories = [m for m in memories if not any(ex in m.get("content", "").lower() for ex in EXCLUDED_CONTENT)]
+    for m in memories:
+        m["content"] = _mask_sensitive(m.get("content") or "")
     return jsonify(memories)
+
+# ─── API: Checkpoints (checkpoint automático de sessão) ──────────────
+
+def _mask_sensitive(text: str) -> str:
+    """Mascara credenciais na EXIBIÇÃO (banco fica intocado).
+
+    PLAN_CHECKPOINT_MASK.md (10/08/2026). Substitui valores sensíveis por
+    marcadores visíveis (ex.: ***(senha)***) para que o olho identifique
+    facilmente que ali há uma credencial — sem expô-la.
+    """
+    import re as _re
+    if not text:
+        return text
+    # 1. stdin quoted com sudo/pkexec:  pkexec ... <<< "SENHA" (aspas normais " ou escapadas \")
+    text = _re.sub(r'<<<\s*\\"[^\\"]{1,120}\\"', '<<< \\"***(senha)***\\"', text)
+    text = _re.sub(r'<<<\s*"[^"]{1,120}"', '<<< "***(senha)***"', text)
+    # 2. password/passwd/senha = valor
+    text = _re.sub(r'(?i)(password|passwd|senha)\s*=\s*\S+', r'\1=***(senha)***', text)
+    # 3. api key
+    text = _re.sub(r'(?i)(api[_-]?key)\s*=\s*\S+', r'\1=***(api_key)***', text)
+    # 4. token (valor >= 12 chars)
+    text = _re.sub(r'(?i)(token)\s*=\s*["\']?\S{12,}["\']?', r'\1=***(token)***', text)
+    # 5. Authorization: Bearer X
+    text = _re.sub(r'(?i)(authorization:\s*bearer\s+)\S+', r'\1***(bearer)***', text)
+    return text
+
+
+@app.route("/api/checkpoints")
+def checkpoints():
+    """Checkpoints automáticos de sessão (PLAN_CHECKPOINT_AUTO.md).
+
+    Lê memórias do Mnemosyne com source='checkpoint' (briefings) e
+    'checkpoint-verbatim' (prova literal), agrupadas por ciclo. A ordem é
+    cronológica inversa (mais recente primeiro). Usa o índice idx_source.
+    """
+    import sqlite3
+    from prometheus_db import DB_PATH
+    try:
+        limit = min(max(int(request.args.get("limit", 50)), 1), 200)
+    except (TypeError, ValueError):
+        limit = 50
+    try:
+        con = sqlite3.connect(str(DB_PATH), timeout=10)
+        con.row_factory = sqlite3.Row
+        rows = con.execute(
+            "SELECT id, content, source, importance, created_at "
+            "FROM memories WHERE source IN ('checkpoint','checkpoint-verbatim') "
+            "ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        con.close()
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "checkpoints": []}), 500
+    items = [dict(r) for r in rows]
+    for it in items:
+        it["content"] = _mask_sensitive(it.get("content") or "")
+    return jsonify({"checkpoints": items, "count": len(items)})
 
 # ─── API: Graph ────────────────────────────────────
 
@@ -207,7 +266,7 @@ def canvas_node(node_id):
 @app.route("/api/stats/resources")
 def stats_resources():
     import shutil
-    out = {"gpu": None, "ram": None, "disk": None, "process_mb": None}
+    out = {"gpu": None, "ram": None, "disk": None, "process_mb": None, "cpu": None}
 
     try:
         r = subprocess.run(
@@ -245,6 +304,32 @@ def stats_resources():
                 break
     except Exception:
         pass
+
+    # CPU%: psutil (se instalado) senão fallback manual com /proc/stat (2 leituras)
+    try:
+        import psutil
+        out["cpu"] = {"pct": psutil.cpu_percent(interval=0.1)}
+    except Exception:
+        try:
+            def _cpu_times():
+                t = {}
+                for line in open("/proc/stat"):
+                    if line.startswith("cpu "):
+                        vals = [int(x) for x in line.split()[1:]]
+                        idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
+                        t = {"total": sum(vals), "idle": idle}
+                        break
+                return t
+            a = _cpu_times()
+            import time as _t
+            _t.sleep(0.1)
+            b = _cpu_times()
+            dt = b["total"] - a["total"]
+            di = b["idle"] - a["idle"]
+            pct = round(100 * (1 - di / dt), 1) if dt > 0 else 0.0
+            out["cpu"] = {"pct": pct}
+        except Exception:
+            pass
 
     return jsonify(out)
 
@@ -446,7 +531,9 @@ def memory_recall():
         for r in results:
             r["graph_degree"] = _degrees.get(str(r.get("id")), 0)
         return jsonify({"count": len(results), "agent_id": data.get("agent_id", "default"),
-                        "results": [{"id": r.get("id"), "content": r.get("content"), "score": r.get("score"),
+                        "results": [{"id": r.get("id"),
+                                     "content": _mask_sensitive(r.get("content") or ""),
+                                     "score": r.get("score"),
                                      "graph_degree": r.get("graph_degree", 0)} for r in results]})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
@@ -476,6 +563,8 @@ def search():
     results = parse_mnemosyne_output(raw)
     for r in results:
         r["project"] = extract_project(r.get("content", ""))
+    for r in results:
+        r["content"] = _mask_sensitive(r.get("content") or "")
     if project:
         results = [r for r in results if r["project"] == project]
     # Exclude Bytex_AgentOS memories (separate project, runs on VPS)
@@ -543,7 +632,7 @@ def memory_detail(mem_id):
     content = row[1] or ""
     return jsonify({
         "id": row[0],
-        "content": content,
+        "content": _mask_sensitive(content),
         "importance": str(row[2] if row[2] is not None else 0.5),
         "project": extract_project(content),
     })

@@ -47,7 +47,8 @@ Los datos viven en el volumen nombrado `prometheus-data` (nunca salen del host).
 
 ## Recursos en vivo
 
-- ⚡ **Monitor de recursos en tiempo real** — barras de GPU/RAM/disco + consumo del proceso en la barra lateral (actualiza cada 3s)
+- ⚡ **Monitor de recursos en tiempo real** — barras de GPU/CPU/RAM/disco + consumo del proceso en la barra lateral (actualiza cada 3s)
+- 🧠 **Checkpoints automáticos de sesión** — cada 3 min, todo lo conversado se resume (DeepSeek) y se guarda verbatim en la memoria de Mnemosyne (`source=checkpoint`/`checkpoint-verbatim`, tag `[checkpoint-cycle:...]`); la **pestaña Checkpoints** renderiza briefings + verbatim; las credenciales se enmascaran en la visualización (`***(senha)***`)
 
 ## Plataformas soportadas
 

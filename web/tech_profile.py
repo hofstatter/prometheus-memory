@@ -57,10 +57,10 @@ def _project_dir(slug: str) -> Path | None:
         row = con.execute("SELECT repo_path FROM prometheus_projects WHERE slug = ?", (slug,)).fetchone()
     finally:
         con.close()
-    if row and row["repo_path"]:
-        p = Path(row["repo_path"])
-        if p.exists():
-            return p
+    from prometheus_db import resolve_repo_path
+    rp = resolve_repo_path((row["repo_path"] if row else None) or "")
+    if rp:
+        return Path(rp)
     cand = (PROJECTS_ROOT / slug).resolve()
     root = PROJECTS_ROOT.resolve()
     return cand if cand.exists() and cand.is_relative_to(root) else None
@@ -184,22 +184,44 @@ def _git_info(d: Path) -> dict:
 
 
 def _containers(slug: str, d: Path) -> list:
+    """Containers Docker do projeto (P5/F6). Lê via Engine API sobre unix socket
+    (docker.sock montado :ro no container) — sem depender de CLI docker. Filtra por
+    prefixo do slug ou nome do diretório, mesmo padrão do `docker ps` original."""
     prefix = slug.lower()
     dirname = d.name.lower()
     try:
-        r = subprocess.run(["docker", "ps", "--format", "{{.Names}}\t{{.Status}}\t{{.Ports}}"],
-                           capture_output=True, text=True, timeout=6)
+        import http.client
+        import socket as _socket
+
+        sock_path = os.environ.get("DOCKER_SOCKET", "/var/run/docker.sock")
+        s = _socket.socket(_socket.AF_UNIX, _socket.SOCK_STREAM)
+        s.settimeout(3)
+        try:
+            s.connect(sock_path)
+        except OSError:
+            s.close()
+            return []
+        conn = http.client.HTTPConnection("localhost", timeout=3)
+        conn.sock = s
+        conn.request("GET", "/containers/json")
+        resp = conn.getresponse()
+        body = resp.read().decode("utf-8", "replace")
+        conn.close()
+        containers = json.loads(body) if resp.status == 200 else []
         out = []
-        for line in r.stdout.splitlines():
-            if not line.strip():
+        for c in containers:
+            names = c.get("Names") or []
+            name = (names[0].lstrip("/") if names else "") or (c.get("Id") or "")[:12]
+            if not (prefix in name.lower() or dirname in name.lower()):
                 continue
-            parts = line.split("\t")
-            name = parts[0]
-            if prefix in name.lower() or dirname in name.lower():
-                out.append({"name": name, "status": parts[1] if len(parts) > 1 else "",
-                            "ports": parts[2] if len(parts) > 2 else ""})
+            status = c.get("Status") or ""
+            ports = ", ".join(
+                f"{p.get('IP', '')}:{p.get('PublicPort', '')}->{p.get('PrivatePort', '')}"
+                for p in (c.get("Ports") or []) if p.get("PublicPort")
+            )
+            out.append({"name": name, "status": status, "ports": ports})
         return out
-    except (subprocess.SubprocessError, OSError):
+    except (subprocess.SubprocessError, OSError, ValueError, json.JSONDecodeError):
         return []
 
 

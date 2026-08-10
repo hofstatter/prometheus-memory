@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0-dev] — 2026-08-10 (Checkpoints automáticos + GPU/CPU no painel + fixes Docker)
+
+### Features
+
+- 🧠 **Automatic session checkpoints** — `checkpoint_service.py` (host, systemd timer a cada 3 min) resume toda conversa (DeepSeek) + guarda verbatim no Mnemosyne (`source=checkpoint`/`checkpoint-verbatim`, tag `[checkpoint-cycle:...]`); **aba Checkpoints** na UI renderiza briefings + verbatim; **credenciais mascaradas na exibição** (`***(senha)***`) em checkpoints/timeline/search/recall/detail; miner omite parts sensíveis (write-time).
+- ⚡ **Painel Recursos completo** — GPU restaurada no container (devices NVIDIA + nvidia-smi/libs do host) + **CPU% novo** (psutil//proc/stat) → 5 barras (GPU/CPU/RAM/HD/processo).
+- 📄 **Docs 4 idiomas** — READMEs en/pt-BR/es/zh-CN ganham a seção Checkpoints + screenshot `docs/SCREENSHOTS/checkpoints.png`.
+
+### Fixes
+
+- 🐛 **Telemetria/painel pós-Docker:** `resolve_repo_path()` (repo_path host→/data/projetos), containers via Docker socket (Engine API), coletor com paths env-first, micro-MCP `prometheus-pm` (pm_event/pm_session/pm_tasks).
+- 🐛 **Cache embeddings persistente** — `MNEMOSYNE_FASTEMBED_CACHE_DIR` no volume (recall 30s→2s; mnemosyne 3.16.0).
+
 ## [0.3.0-dev] — 2026-08-09 (Docs: knob + Docker nos READMEs 4 idiomas)
 
 ### Documentação

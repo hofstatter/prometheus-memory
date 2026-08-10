@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     cron \
     git \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -29,8 +30,10 @@ COPY web/templates ./templates
 COPY web/static ./static
 COPY web/scripts ./scripts
 
-# pré-baixa o modelo de embeddings no build (evita travamento do boot na 1ª subida)
-RUN python3 -c "from fastembed import TextEmbedding; TextEmbedding(model_name='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')" 2>/dev/null || true
+# Cache de embeddings: path persistente no volume prometheus-data (external) — os
+# modelos são baixados sob demanda no runtime (entrypoint/healthcheck) com essas envs;
+# pre-download na build seria descartado pelo volume external montado por cima.
+ENV FASTEMBED_CACHE_PATH=/data/mnemosyne/fastembed-cache
 
 # UID do usuário do host (herbert=1000) — sem corrupção de permissão nos binds
 RUN useradd -m -u 1000 -s /bin/bash herbert \

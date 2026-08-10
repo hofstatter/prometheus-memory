@@ -110,6 +110,7 @@
     <button onclick="showNotes()" id="btn-notes" class="btn-inactive">📝 Notes</button>
     <button onclick="showSkills()" id="btn-skills" class="btn-inactive">🧩 Skills</button>
     <button onclick="showProjects()" id="btn-projects" class="btn-inactive">🗂️ Projetos</button>
+    <button onclick="showCheckpoints()" id="btn-checkpoints" class="btn-inactive">🧠 Checkpoints</button>
     <button onclick="authAction()" id="btn-token" class="btn-inactive" title="Login">🔑</button>
     <span class="count" id="memory-count">carregando...</span>
   </nav>
@@ -255,6 +256,16 @@
         <aside id="projects-drawer" style="width:0;min-width:0;overflow:hidden;background:var(--surface-1);border-left:1px solid var(--hairline);transition:width 0.25s var(--ease-out)" aria-hidden="true">
           <div style="padding:20px 16px" id="projects-drawer-body"></div>
         </aside>
+      </div>
+
+      <!-- 🧠 Checkpoints (checkpoint automático de sessão) -->
+      <div id="checkpoints-view" class="hidden" style="display:none;flex:1;overflow-y:auto;padding:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-size:18px;font-weight:700">🧠 Checkpoints automáticos</h2>
+          <button onclick="loadCheckpoints()" style="background:var(--surface-2);border:1px solid var(--hairline);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">↻ Atualizar</button>
+        </div>
+        <div style="color:var(--ink-muted);font-size:12px;margin-bottom:16px">Briefings de retomada gerados automaticamente a cada 3 min pelo serviço de checkpoint (PLAN_CHECKPOINT_AUTO.md). Fonte: memórias do Mnemosyne com source checkpoint/checkpoint-verbatim.</div>
+        <div id="checkpoints-list" style="display:flex;flex-direction:column;gap:12px"><div style="color:var(--ink-muted);font-size:12px">carregando...</div></div>
       </div>
     </div>
   </main>
@@ -411,10 +422,11 @@ function loadResources(){
     if(!el)return;
     let h='<div style="font-size:10px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">⚡ Recursos <span style="font-weight:400;text-transform:none;opacity:0.7">· ao vivo</span></div>';
     if(d.gpu)h+=resBar('GPU',d.gpu.pct,d.gpu.util.toFixed(0)+'% · '+(d.gpu.used_mb/1024).toFixed(1)+'/'+(d.gpu.total_mb/1024).toFixed(0)+'GB','#a78bfa');
+    if(d.cpu)h+=resBar('CPU',d.cpu.pct,d.cpu.pct.toFixed(0)+'%','#fbbf24');
     if(d.ram)h+=resBar('RAM',d.ram.pct,d.ram.used_gb+'/'+d.ram.total_gb+'GB','#22d3ee');
     if(d.disk)h+=resBar('HD',d.disk.pct,d.disk.used_gb+'/'+d.disk.total_gb+'GB','#34d399');
     if(d.process_mb)h+='<div style="font-size:10px;color:var(--ink-subtle);margin-top:4px">Prometheus: <b style="color:var(--ink-muted)">'+d.process_mb+' MB</b> RAM</div>';
-    if(!d.gpu&&!d.ram&&!d.disk)h+='<div style="font-size:11px;color:var(--ink-subtle)">indisponível</div>';
+    if(!d.gpu&&!d.ram&&!d.disk&&!d.cpu)h+='<div style="font-size:11px;color:var(--ink-subtle)">indisponível</div>';
     el.innerHTML=h;
   }).catch(()=>{})
 }
@@ -529,7 +541,7 @@ function confirmDeleteMemory(){
 function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
 
 // ── View switching ──
-function resetViews(){if(window.clearPMPolling)window.clearPMPolling();['memory-list','graph-view','canvas-view','rag-view','notes-view','skills-view','projects-view'].forEach(id=>document.getElementById(id).style.display='none');['btn-list','btn-graph','btn-canvas','btn-rag','btn-notes','btn-skills','btn-projects'].forEach(id=>document.getElementById(id).className='btn-inactive');document.getElementById('sidebar').style.display='block'}
+function resetViews(){if(window.clearPMPolling)window.clearPMPolling();['memory-list','graph-view','canvas-view','rag-view','notes-view','skills-view','projects-view','checkpoints-view'].forEach(id=>document.getElementById(id).style.display='none');['btn-list','btn-graph','btn-canvas','btn-rag','btn-notes','btn-skills','btn-projects','btn-checkpoints'].forEach(id=>document.getElementById(id).className='btn-inactive');document.getElementById('sidebar').style.display='block'}
 function showList(){resetViews();currentView='list';document.getElementById('memory-list').style.display='block';document.getElementById('btn-list').className='btn-active';if(graphInstance){try{graphInstance.destroy()}catch(e){}graphInstance=null}renderList()}
 function showGraph(){resetViews();currentView='graph';document.getElementById('graph-view').style.display='block';document.getElementById('graph-view').classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-graph').className='btn-active';
   renderGraph()}
@@ -546,6 +558,30 @@ function showCanvas(){
 function showRAG(){resetViews();currentView='rag';var rv=document.getElementById('rag-view');rv.style.display='flex';rv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-rag').className='btn-active';loadRAGCollections();loadRAGDocs();loadRAGStats()}
 function showSkills(){resetViews();currentView='skills';var sv=document.getElementById('skills-view');sv.style.display='flex';sv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-skills').className='btn-active';loadSkills()}
 function showProjects(){resetViews();currentView='projects';var pv=document.getElementById('projects-view');pv.style.display='flex';pv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-projects').className='btn-active';if(window.loadPMBoards){loadPMBoards();loadPresenceLoop()}}
+function showCheckpoints(){resetViews();currentView='checkpoints';var cv=document.getElementById('checkpoints-view');cv.style.display='block';cv.classList.remove('hidden');document.getElementById('sidebar').style.display='none';document.getElementById('btn-checkpoints').className='btn-active';loadCheckpoints()}
+function loadCheckpoints(){
+  var list=document.getElementById('checkpoints-list');
+  list.innerHTML='<div style="color:var(--ink-muted);font-size:12px">carregando...</div>';
+  fetch('/api/checkpoints?limit=50').then(function(r){return r.json()}).then(function(d){
+    var items=(d&&d.checkpoints)||[];
+    if(items.length===0){
+      list.innerHTML='<div style="color:var(--ink-muted);font-size:14px;padding:40px 0;text-align:center">Nenhum checkpoint ainda. O serviço roda a cada 3 min automaticamente.</div>';
+      return
+    }
+    list.innerHTML=items.map(function(m){
+      var isVerbatim=m.source==='checkpoint-verbatim';
+      var badge=isVerbatim?'📄 verbatim':'🧠 briefing';
+      var color=isVerbatim?'var(--ink-muted)':'var(--neon, #5e6ad2)';
+      var body=(m.content||'').split('\n').map(function(l){return l.trim()?('<div>'+l+'</div>'):'<div style="height:6px"></div>'}).join('');
+      return '<div style="background:var(--surface-1);border:1px solid var(--hairline);border-radius:12px;padding:14px 16px">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px;color:'+color+'">'
+        +'<span style="font-weight:600">'+badge+'</span>'
+        +'<span style="color:var(--ink-muted)">'+(m.created_at||'')+'</span>'
+        +'<span style="color:var(--ink-muted)">·</span><span style="color:var(--ink-muted)">'+Math.round((m.importance||0)*100)+'%</span>'
+        +'</div><div style="font-size:13px;line-height:1.6;color:var(--ink)">'+body+'</div></div>'
+    }).join('');
+  }).catch(function(e){list.innerHTML='<div style="color:#e5534b;font-size:12px">Erro: '+e+'</div>'})
+}
 var allSkills=[],skillSelected='';
 function loadSkills(){
   var list=document.getElementById('skills-list');
@@ -1151,7 +1187,7 @@ function togglePhysics(){
 // Deep-link de abas via hash (#graph, #canvas, #rag, #notes, #skills, #projects)
 (function(){
   const h = location.hash.replace('#','');
-  const map = {graph: showGraph, canvas: showCanvas, rag: showRAG, notes: showNotes, skills: showSkills, projects: showProjects, timeline: showList};
+  const map = {graph: showGraph, canvas: showCanvas, rag: showRAG, notes: showNotes, skills: showSkills, projects: showProjects, checkpoints: showCheckpoints, timeline: showList};
   if (map[h]) setTimeout(map[h], 300);
 })();
 </script>

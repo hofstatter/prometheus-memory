@@ -14,6 +14,7 @@ last_collect_ts em prometheus_meta.
 """
 import hashlib
 import json
+import os
 import sqlite3
 import sys
 import time
@@ -21,10 +22,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # ---------- paths ----------
+# Resolução env-first (P6/Docker): no container os binds são /telemetry/config e
+# /telemetry/share, e o DB vive em MNEMOSYNE_HOME (volume). No host (systemd) os
+# defaults abaixo preservam o comportamento original.
 HOME = Path.home()
-WORKFLOW_STATE = Path.home() / ".config" / "opencode" / "workflow-state.json"
-OPENCODE_DB = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
-MNEMOSYNE_HOME = Path.home() / ".hermes" / "mnemosyne"
+OC_CONFIG_DIR = Path(os.environ.get("OPENCODE_CONFIG_DIR", HOME / ".config" / "opencode"))
+OC_DATA_DIR = Path(os.environ.get("OPENCODE_DATA_DIR", HOME / ".local" / "share" / "opencode"))
+WORKFLOW_STATE = OC_CONFIG_DIR / "workflow-state.json"
+OPENCODE_DB = OC_DATA_DIR / "opencode.db"
+MNEMOSYNE_HOME = Path(os.environ.get("MNEMOSYNE_HOME", HOME / ".hermes" / "mnemosyne"))
 # Mesmo resolucao do prometheus_db.py (PROMETHEUS_DB env > MNEMOSYNE_HOME/data/mnemosyne.db)
 DB_PATH = Path(__import__("os").environ.get("PROMETHEUS_DB", MNEMOSYNE_HOME / "data" / "mnemosyne.db"))
 
@@ -387,6 +393,7 @@ def generate_daily_report(con: sqlite3.Connection) -> dict:
 
 
 def run() -> None:
+    print(f"[telemetry] db={DB_PATH} workflow={WORKFLOW_STATE} opencode={OPENCODE_DB}", flush=True)
     con = _connect()
     _ensure_meta(con)
     wf = ingest_workflow(con)
