@@ -54,7 +54,7 @@ literalmente **fica mais inteligente a cada ciclo**, sem intervenção humana.
 - ✏️ **Editor inline** — edição e exclusão de memórias direto na UI (7 abas + editor modal)
 - 💾 **Offloading de logs** — outputs grandes de ferramentas viram refs (até 61% de redução de tokens)
 - ⚡ **Monitor de recursos ao vivo** — barras de GPU/CPU/RAM/HD em tempo real + consumo do processo na sidebar da Timeline (atualiza a cada 3s)
-- 🧠 **Checkpoints automáticos de sessão** — a cada 3 min, tudo que foi conversado vira resumo (DeepSeek) + verbatim na memória do Mnemosyne (`source=checkpoint`/`checkpoint-verbatim`, tag `[checkpoint-cycle:...]`); **aba Checkpoints** renderiza briefings + verbatim; credenciais são mascaradas na exibição (`***(senha)***`)
+- 🧠 **Checkpoints automáticos de sessão** — a cada 3 min, tudo que foi conversado vira resumo (DeepSeek) + verbatim na memória do Mnemosyne (`source=checkpoint`/`checkpoint-verbatim`, tag `[checkpoint-cycle:...]`); **aba Checkpoints** renderiza briefings + verbatim com **auto-refresh a cada 1 min**; credenciais são mascaradas na exibição (`***(senha)***`)
 - 🧠 **Skill generation** — detecta padrões recorrentes nas cenas e gera skills reutilizáveis
 - 🗂️ **Aba Projetos (v0.2)** — painel operacional por projeto: kanban, timeline, barra de progresso e **presença de agentes em tempo real** (active/idle/stale via heartbeat), com lanes `sess:*`/`proj:*`/`agent:*` e `/api/pm/*` (idempotência por `client_event_id`, Project Resolver com confidence)
 - 🔑 **Conexões & Custos (v0.2)** — chaves API/MCPs/assinaturas por projeto: scan read-only do `.env` (fingerprint SHA-256, **valor nunca armazenado/exposto**), alertas "pago e sem uso"/"expirando", chave compartilhada, resumo de custo mensal global
