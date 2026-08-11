@@ -4,7 +4,7 @@ Prometheus Memory — Web UI Unificada
 Timeline + Grafo + Canvas + Documents (RAG) + Notes + Editor
 Configuração via variáveis de ambiente (ver .env.example).
 """
-import os, sys, json, subprocess
+import os, sys, json, subprocess, logging
 from pathlib import Path
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request
@@ -216,6 +216,31 @@ def graph():
 
 @app.route("/api/canvas")
 def canvas():
+    _scripts_cand = [SRC_DIR / "scripts", SRC_DIR.parent / "scripts"]
+    for _sc in _scripts_cand:
+        if _sc.exists() and str(_sc) not in sys.path:
+            sys.path.insert(0, str(_sc))
+    # Regen-if-stale: canvas.mmd velho + eventos novos → regenera na hora (self-healing).
+    try:
+        import sqlite3
+        from canvas_generator import main as regen_canvas, mode_of
+        from prometheus_db import DB_PATH
+        latest = None
+        if DB_PATH.exists():
+            con = sqlite3.connect(str(DB_PATH), timeout=10)
+            try:
+                row = con.execute(
+                    "SELECT MAX(created_at) FROM prometheus_project_events"
+                ).fetchone()
+                latest = row[0] if row else None
+            except sqlite3.OperationalError:
+                latest = None
+            finally:
+                con.close()
+        if latest and (not CANVAS_FILE.exists() or CANVAS_FILE.stat().st_mtime < datetime.fromisoformat(str(latest)).timestamp()):
+            regen_canvas()
+    except Exception as e:
+        logging.warning("canvas regen-if-stale skipped: %s", e)
     age = "atualizado agora"
     if CANVAS_FILE.exists():
         mmd = CANVAS_FILE.read_text()
@@ -235,10 +260,6 @@ def canvas():
                 total = line.split(":")[1].strip()
         mmd = f"stateDiagram-v2\n    [*] --> Mnemosyne\n    note right of Mnemosyne: {total} memorias\n    Mnemosyne --> [*]"
         age = "canvas ainda não gerado"
-    _scripts_cand = [SRC_DIR / "scripts", SRC_DIR.parent / "scripts"]
-    for _sc in _scripts_cand:
-        if _sc.exists() and str(_sc) not in sys.path:
-            sys.path.insert(0, str(_sc))
     from canvas_generator import mode_of
     return jsonify({"mermaid": mmd, "age": age, "mode": mode_of(mmd)})
 
