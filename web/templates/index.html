@@ -149,22 +149,23 @@
     <div style="flex:1;padding:24px;overflow-y:auto;max-height:calc(100vh - 56px)">
       <div id="memory-list"><div class="col-span-1 text-center text-gray-500 py-8">Carregando memórias...</div></div>
       <div id="graph-view" class="hidden"><div id="graph-container"></div></div>
-      <div id="canvas-view" class="hidden" style="padding:24px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div id="canvas-view" class="hidden" style="padding:24px;display:flex;flex-direction:column;height:calc(100vh - 96px);box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
           <h2 style="font-size:18px;font-weight:600;color:var(--ink)">📐 Canvas — Fluxo do Agente <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;margin:0 6px;box-shadow:0 0 8px #34d399;animation:pulse 2.4s var(--ease-out) infinite"></span><span style="font-size:12px;color:var(--ink-muted);font-weight:400" id="canvas-age"></span></h2>
-          <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:6px;align-items:center">
             <button onclick="zoomCanvas(0.3)" class="btn-inactive" style="padding:4px 10px;font-size:13px">🔍+</button>
             <button onclick="zoomCanvas(-0.3)" class="btn-inactive" style="padding:4px 10px;font-size:13px">🔍-</button>
+            <button onclick="fitCanvas()" class="btn-inactive" style="padding:4px 10px;font-size:13px" title="Ajustar à tela">⛶</button>
             <button onclick="canvasZoom=1;applyCanvasZoom()" class="btn-inactive" style="padding:4px 10px;font-size:13px">↺</button>
           </div>
         </div>
-        <div id="canvas-chips" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"></div>
-        <div style="background:radial-gradient(ellipse at 50% 30%,#12121f 0%,#0a0a12 65%,#07070e 100%);border:1px solid var(--hairline);border-radius:var(--radius-lg);padding:32px 24px;overflow:hidden">
-          <div id="canvas-zoom-wrapper" style="transform:scale(1);transform-origin:top left;transition:transform 0.25s var(--ease-out);min-height:200px">
-            <div id="mermaid-render" class="flex justify-center"></div>
+        <div id="canvas-chips" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;flex-shrink:0"></div>
+        <div id="canvas-stage" style="flex:1;min-height:0;background:radial-gradient(ellipse at 50% 30%,#12121f 0%,#0a0a12 65%,#07070e 100%);border:1px solid var(--hairline);border-radius:var(--radius-lg);overflow:hidden;position:relative">
+          <div id="canvas-zoom-wrapper" style="transform:scale(1);transform-origin:0 0;transition:transform 0.25s var(--ease-out);width:max-content;min-height:100%">
+            <div id="mermaid-render" style="padding:32px 24px"></div>
           </div>
         </div>
-        <p style="font-size:11px;color:var(--ink-muted);margin-top:8px;text-align:center">🖱️ Scroll = zoom  ·  Clique nos nós = detalhes</p>
+        <p style="font-size:11px;color:var(--ink-muted);margin-top:8px;text-align:center;flex-shrink:0">🖱️ Scroll = zoom  ·  Arrastar = mover  ·  Clique nos nós = detalhes</p>
       </div>
       <div id="rag-view" class="hidden" style="display:flex;gap:0;height:calc(100vh - 80px)">
         <div style="width:220px;min-width:220px;background:var(--surface-1);border-right:1px solid var(--hairline);padding:16px;overflow-y:auto" id="rag-sidebar">
@@ -308,23 +309,31 @@
 <script>
 mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'strict',themeVariables:{
   background:'transparent',
-  primaryColor:'#171827',
-  primaryBorderColor:'#4c4f7a',
+  primaryColor:'#14151c',
+  primaryBorderColor:'#5e6ad2',
   primaryTextColor:'#e6e8f5',
-  lineColor:'#4c4f7a',
+  lineColor:'#5e6ad2',
   textColor:'#9aa0b4',
   fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif',
-  fontSize:'13px',
+  fontSize:'15px',
+  clusterBkg:'#0f1011',
+  clusterBorder:'#34343a',
+  clusterTitleFontSize:'16px',
+  clusterTitleFontWeight:'600',
+  clusterTitleFontColor:'#f7f8f8',
+  edgeLabelBackground:'#12121f',
+  edgeLabelColor:'#aab0c4',
+  labelTextColor:'#aab0c4',
+  nodeBorder:'#34343a',
+  mainBkg:'#14151c',
   stateBkg:'#171827',
   stateBorder:'#4c4f7a',
   stateLabelColor:'#e6e8f5',
   noteBkgColor:'#1c1d29',
   noteBorderColor:'#34353f',
   noteTextColor:'#aab0c4',
-  edgeLabelBackground:'#12121f',
   transitionColor:'#4c4f7a',
-  transitionLabelColor:'#aab0c4',
-  labelTextColor:'#aab0c4'
+  transitionLabelColor:'#aab0c4'
 }});
 
 let allMemories=[],currentView='list';
@@ -549,7 +558,7 @@ function showCanvas(){
   resetViews();
   currentView='canvas';
   var cv=document.getElementById('canvas-view');
-  cv.style.display='block';
+  cv.style.display='flex';
   cv.classList.remove('hidden');
   document.getElementById('sidebar').style.display='none';
   document.getElementById('btn-canvas').className='btn-active';
@@ -670,8 +679,35 @@ function showNotes(){resetViews();currentView='notes';var nv=document.getElement
 
 // ── Canvas ──
 var canvasZoom=1;
-function applyCanvasZoom(){document.getElementById('canvas-zoom-wrapper').style.transform='scale('+canvasZoom+')'}
-function zoomCanvas(d){canvasZoom=Math.max(0.2,Math.min(3,canvasZoom+d));applyCanvasZoom()}
+var canvasPan={x:0,y:0};
+var canvasDragging=null;
+function applyCanvasZoom(){const w=document.getElementById('canvas-zoom-wrapper');if(!w)return;w.style.transform='translate('+canvasPan.x+'px,'+canvasPan.y+'px) scale('+canvasZoom+')'}
+function zoomCanvas(d){canvasZoom=Math.max(0.2,Math.min(4,canvasZoom+d));applyCanvasZoom()}
+function fitCanvas(){
+  const stage=document.getElementById('canvas-stage');const svg=document.querySelector('#mermaid-render svg');
+  if(!stage||!svg)return;
+  const vb=svg.viewBox&&svg.viewBox.baseVal;
+  const w=(vb&&vb.width>0)?vb.width:(svg.getBBox().width||1);
+  const h=(vb&&vb.height>0)?vb.height:(svg.getBBox().height||1);
+  const stageW=stage.clientWidth-48,stageH=stage.clientHeight-48;
+  if(stageW<=0||stageH<=0)return;
+  canvasZoom=Math.max(0.2,Math.min(1.4,Math.min(stageW/w,stageH/h)));
+  canvasPan={x:24,y:24};
+  applyCanvasZoom();
+}
+function setupCanvasStage(){
+  const stage=document.getElementById('canvas-stage');if(!stage)return;
+  stage.addEventListener('wheel',function(e){e.preventDefault();const rect=stage.getBoundingClientRect();
+    const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    const old=canvasZoom;canvasZoom=Math.max(0.2,Math.min(4,canvasZoom+(e.deltaY<0?0.15:-0.15)));
+    const k=canvasZoom/old;
+    canvasPan.x=mx-(mx-canvasPan.x)*k;canvasPan.y=my-(my-canvasPan.y)*k;applyCanvasZoom()},{passive:false});
+  stage.addEventListener('pointerdown',function(e){if(e.button!==0&&e.button!==1)return;canvasDragging={x:e.clientX,y:e.clientY,px:canvasPan.x,py:canvasPan.y};stage.setPointerCapture(e.pointerId)});
+  stage.addEventListener('pointermove',function(e){if(!canvasDragging)return;canvasPan.x=canvasDragging.px+(e.clientX-canvasDragging.x);canvasPan.y=canvasDragging.py+(e.clientY-canvasDragging.y);applyCanvasZoom()});
+  stage.addEventListener('pointerup',function(){canvasDragging=null});
+  stage.addEventListener('pointercancel',function(){canvasDragging=null});
+}
+function resetCanvasState(){canvasZoom=1;canvasPan={x:0,y:0}}
 async function renderCanvas(){
   const el=document.getElementById('mermaid-render');
   const age=document.getElementById('canvas-age');
@@ -684,11 +720,18 @@ async function renderCanvas(){
     const id='mmd-'+Date.now();
     const {svg}=await mermaid.render(id, d.mermaid);
     el.innerHTML=svg;
+    const s=el.querySelector('svg');
+    if(s&&s.viewBox&&s.viewBox.baseVal&&s.viewBox.baseVal.width>0){
+      s.style.width=s.viewBox.baseVal.width+'px';
+      s.style.height=s.viewBox.baseVal.height+'px';
+      s.style.maxWidth='none';
+    }
     if(window.setupCanvasExtras)setupCanvasExtras(d);
     document.querySelectorAll('#mermaid-render .node').forEach(n=>{n.style.cursor='pointer';n.onclick=function(e){handleCanvasClick(e)}});
     age.textContent=d.age||'';
-    const wrapper=document.getElementById('canvas-zoom-wrapper');
-    if(wrapper)wrapper.onwheel=function(e){e.preventDefault();canvasZoom=Math.max(0.2,Math.min(3,canvasZoom+(e.deltaY<0?0.1:-0.1)));applyCanvasZoom()}
+    resetCanvasState();
+    setupCanvasStage();
+    setTimeout(fitCanvas,60);
   }catch(e){
     el.innerHTML='<p style="color:var(--ink-muted);text-align:center;padding:2rem">Canvas indisponível</p>';
   }

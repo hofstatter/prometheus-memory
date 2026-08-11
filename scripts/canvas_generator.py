@@ -64,30 +64,42 @@ def _load_events() -> tuple:
     return by_slug, proj_map
 
 
+def _short_date(created_at: str) -> str:
+    s = str(created_at or "")
+    for sep in ("T", " "):
+        if sep in s:
+            s = s.split(sep)[0]
+    parts = s.split("-")
+    return f"{parts[2][:2]}/{parts[1]}" if len(parts) == 3 else ""
+
+
 def generate(by_slug: dict, proj_map: dict, fallback: str = "") -> str:
     """Mermaid multi-projeto (flowchart TD + subgraphs). Fallback se sem eventos."""
     if not by_slug:
         return fallback
 
     lines = ["flowchart TD"]
-    lines.append("  classDef backlog fill:#94a3b822,stroke:#94a3b8")
-    lines.append("  classDef doing fill:#eab30822,stroke:#eab308")
-    lines.append("  classDef done fill:#22c55e22,stroke:#22c55e")
-    lines.append("  classDef blocked fill:#ef444422,stroke:#ef4444")
+    lines.append("  classDef backlog fill:#1e293b,stroke:#94a3b8,stroke-width:2px,color:#cbd5e1")
+    lines.append("  classDef doing fill:#713f12,stroke:#eab308,stroke-width:2px,color:#fde68a")
+    lines.append("  classDef done fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#a7f3d0")
+    lines.append("  classDef blocked fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fecaca")
 
     agent_slugs: dict = defaultdict(set)
     for slug, events in sorted(by_slug.items()):
         sid = _sid(slug)
         name = _sanitize(proj_map.get(slug, slug), 30)
-        lines.append(f'  subgraph {sid}["{name}"]')
-        evs = sorted(events, key=lambda e: e.get("created_at") or "")[:MAX_NODES_PER_PROJECT]
+        evs = sorted(events, key=lambda e: e.get("created_at") or "")[-MAX_NODES_PER_PROJECT:]
+        done_n = sum(1 for e in evs if STATUS_CLASS.get(e.get("status_hint") or "") == "done")
+        lines.append(f'  subgraph {sid}["{name} · {done_n}/{len(evs)} done"]')
         prev = None
         for i, ev in enumerate(evs):
             nid = f"{_sid(slug)[:8]}{i}"
             cls = STATUS_CLASS.get(ev.get("status_hint") or "", "backlog")
             icon = TYPE_ICON.get(ev.get("event_type"), "•")
-            title = _sanitize(ev.get("title"), 40)
-            lines.append(f'    {nid}["{icon} {title}"]:::{cls}')
+            title = _sanitize(ev.get("title"), 44)
+            d = _short_date(ev.get("created_at"))
+            label = f"{icon} {title}" + (f" · {d}" if d else "")
+            lines.append(f'    {nid}["{label}"]:::{cls}')
             if prev:
                 lines.append(f"    {prev} --> {nid}")
             prev = nid
