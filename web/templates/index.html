@@ -405,7 +405,14 @@ function loadProjects(){
   fetch('/api/projects').then(r=>r.json()).then(projects=>{
     if(!Array.isArray(projects))return; // 401/erro → não quebra o loader
     const sel=document.getElementById('project-filter');
-    projects.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent='['+p+']';sel.appendChild(o)})
+    projects.forEach(p=>{
+      const slug=(typeof p==='string')?p:(p.slug||'');
+      if(!slug)return;
+      const o=document.createElement('option');
+      o.value=slug;
+      o.textContent='['+slug+']'+(typeof p==='object'&&p.count!==undefined?(' ('+p.count+')'):'');
+      sel.appendChild(o);
+    })
   })
 }
 function loadStats(){
@@ -467,13 +474,33 @@ function updateSidebar(){
     dm?dCount[dm[0]]=(dCount[dm[0]]||0)+1:dCount['sem data']=(dCount['sem data']||0)+1
   });
   const projColor=getProjectColors(allMemories);
-  document.getElementById('project-list').innerHTML=Object.entries(pCount).map(([k,v])=>
-    '<div class="sidebar-item'+(currentFilter===k?' active':'')+'" onclick="filterByProject(\''+k+'\')"><span class="sidebar-dot" style="background:'+projColor[k]+';box-shadow:0 0 6px '+projColor[k]+'55"></span>'+k+'<span class="sidebar-count">'+v+'</span></div>'
-  ).join('')||'<div style="color:var(--ink-muted);font-size:12px">nenhum</div>';
+  // Garante que projetos canônicos com 0 memórias também apareçam (visão do ecossistema)
+  if(!window._canonicalProjects){
+    fetch('/api/projects').then(r=>r.json()).then(projs=>{
+      if(Array.isArray(projs)){
+        window._canonicalProjects=projs.map(p=>(typeof p==='string')?{slug:p,count:0}:p);
+        renderProjectList(pCount,projColor);
+      }
+    }).catch(()=>{renderProjectList(pCount,projColor)});
+    renderProjectList(pCount,projColor);
+  }else{
+    renderProjectList(pCount,projColor);
+  }
   document.getElementById('date-list').innerHTML=Object.entries(dCount).slice(0,15).map(([k,v])=>
-    '<div class="sidebar-item" onclick="filterByDate(\''+k+'\')"><span>📅</span> '+k+'<span class="sidebar-count">'+v+'</span></div>'
+    '<div class="sidebar-item" onclick="filterByDate(\''+k+'\')"><span>📅</span> '+k+'<span class="sidebar-count">'+v+'</div>'
   ).join('')||'<div style="color:var(--ink-muted);font-size:12px">nenhum</div>';
   document.getElementById('sidebar-stats').innerHTML='Total: <b>'+allMemories.length+'</b><br>Projetos: <b>'+Object.keys(pCount).length+'</b><br>Esta semana: <b>'+allMemories.length+'</b>'
+}
+function renderProjectList(pCount,projColor){
+  const items={};
+  Object.keys(pCount).forEach(k=>{items[k]=pCount[k]});
+  // canônicos com 0 memórias entram com contagem 0 (se já carregados)
+  if(window._canonicalProjects){
+    window._canonicalProjects.forEach(p=>{if(p.slug&&!(p.slug in items))items[p.slug]=0});
+  }
+  document.getElementById('project-list').innerHTML=Object.keys(items).sort().map(k=>
+    '<div class="sidebar-item'+(currentFilter===k?' active':'')+'" onclick="filterByProject(\''+k+'\')"><span class="sidebar-dot" style="background:'+(projColor[k]||'#7c83ff')+';box-shadow:0 0 6px '+(projColor[k]||'#7c83ff')+'55"></span>'+k+'<span class="sidebar-count">'+items[k]+'</div>'
+  ).join('')||'<div style="color:var(--ink-muted);font-size:12px">nenhum</div>';
 }
 
 var currentFilter=null;
@@ -1040,7 +1067,7 @@ function buildGraphView(data,container){
   if(typeof G6==='undefined'){container.innerHTML='<p style="color:#ef4444;text-align:center;padding:2rem">G6 não carregou</p>';return}
   const nodes=(data.nodes||[]).map(n=>({
     id:n.id,label:n.label||n.id,
-    data:{type:(n.data&&n.data.type)||'memory',project:(n.data&&n.data.project)||'grafo',
+    data:{type:(n.data&&n.data.type)||'memory',project:(n.project||(n.data&&n.data.project)||'grafo'),
       degree:n.data?n.data.degree||0:0,pagerank:n.data?n.data.pagerank||0:0,
       content:(n.data&&n.data.content)||'',memory_id:(n.data&&n.data.memory_id)||'',
       color:n.color||'#7c83ff',tier:n.tier||'L1'}
@@ -1097,6 +1124,22 @@ function buildGraphView(data,container){
     legend.appendChild(item);
   });
   container.appendChild(legend);
+  // Legenda de projetos (combos)
+  const FALLBACK_PROJ_COLORS={nb02:'#22d3ee',evscar:'#f472b6',pipesales:'#3562fc',bytex:'#a78bfa',provador_digital:'#34d399',alook:'#fbbf24',ods:'#fb7185',global:'#94a3b8',entidades:'#38bdf8'};
+  const pcolors=data.project_colors||{};
+  const projNames=[...new Set(nodes.map(n=>n.data.project||'global'))].sort();
+  if(projNames.length>1){
+    const pl=document.createElement('div');
+    pl.style.cssText='display:flex;gap:10px;flex-wrap:wrap;padding:6px 10px;border:1px solid var(--hairline-strong);border-radius:var(--radius-md);background:var(--surface-2);margin-bottom:8px;font-size:11px;color:var(--ink-muted)';
+    projNames.forEach(p=>{
+      const c=pcolors[p]||FALLBACK_PROJ_COLORS[p]||'#64748b';
+      const item=document.createElement('span');
+      item.style.cssText='display:inline-flex;align-items:center;gap:5px';
+      item.innerHTML='<span style="width:10px;height:10px;border-radius:3px;background:'+c+';display:inline-block"></span>'+p;
+      pl.appendChild(item);
+    });
+    container.appendChild(pl);
+  }
   const canvas=document.createElement('div');canvas.id='g6-canvas';
   const cw=container.clientWidth||800;
   const ch=(container.clientHeight||500)-90;
@@ -1114,12 +1157,27 @@ function buildGraphView(data,container){
   const {Graph,NodeEvent}=G6;
   if(graphInstance){try{graphInstance.destroy()}catch(e){}}
 
-  // Posições iniciais radiais (layout real pela força)
+  // Galáxias: cada projeto = galáxia compacta num anel grande; nós em anéis
+  // concêntricos por grau (hubs no núcleo). Layout 'preset' respeita as posições.
   const pcx=cw/2,pcy=ch/2;
-  nodes.forEach((n,i)=>{
-    const ang=2*Math.PI*i/Math.max(nodes.length,1);
-    const r=Math.max(60,Math.min(190,90+((n.data.degree||0)/maxD)*70));
-    n.style={x:pcx+r*Math.cos(ang),y:pcy+r*Math.sin(ang)};
+  const projList=[...new Set(nodes.map(n=>n.data.project||'global'))]
+    .sort((a,b)=>(nodes.filter(n=>(n.data.project||'global')===b).length)-(nodes.filter(n=>(n.data.project||'global')===a).length));
+  const galaxyR=Math.max(cw,ch)*0.6;
+  const centers={};
+  projList.forEach((p,i)=>{
+    const ang=2*Math.PI*i/Math.max(projList.length,1);
+    centers[p]={x:pcx+galaxyR*Math.cos(ang),y:pcy+galaxyR*Math.sin(ang)};
+  });
+  projList.forEach(p=>{
+    const ns=nodes.filter(n=>(n.data.project||'global')===p)
+      .sort((a,b)=>(b.data.degree||0)-(a.data.degree||0));
+    const c=centers[p];
+    ns.forEach((n,i)=>{
+      if(i===0){n.style={x:c.x,y:c.y};return;}
+      const ring=Math.ceil(i/8),slot=i%8;
+      const r=ring*55,ang=(2*Math.PI*slot)/8+ring*0.5;
+      n.style={x:c.x+r*Math.cos(ang),y:c.y+r*Math.sin(ang)};
+    });
   });
 
   graphInstance=new Graph({container:'g6-canvas',width:cw,height:ch,autoFit:false,animation:false,data:{nodes,edges},
@@ -1173,13 +1231,8 @@ function buildGraphView(data,container){
       ordering:'degree',
       clockwise:true
     }:{
-      type:'d3-force',
-      alpha:0.6,alphaMin:0.001,alphaDecay:0.005,velocityDecay:0.4,
-      link:{distance:150,strength:0.25},
-      manyBody:{strength:-220},
-      center:{x:cw/2,y:ch/2,strength:0.12},
-      collide:{radius:50,strength:0.9},
-      preventOverlap:true
+      // Galáxias: posições determinísticas (respeitadas sem força)
+      type:'preset'
     },
     behaviors:['drag-element-force','zoom-canvas','drag-canvas',{type:'hover-activate',degree:1,direction:'both',enable:e=>e.targetType==='node',state:'active',inactiveState:'inactive'}]
   });
@@ -1208,12 +1261,12 @@ function buildGraphView(data,container){
   if(SMALL){
     [600,1500,3000,5000].forEach(t=>setTimeout(()=>{try{graphInstance.fitView()}catch(e){}}, t));
   }else{
-    // F1.1b: sem autoFit — zoom fixo no núcleo (fitView comprime demais: zoom ~0.03)
-    [3000,8000].forEach(t=>setTimeout(()=>{try{graphInstance.zoomTo(0.65)}catch(e){}}, t));
+    // Galáxias: fitView enquadra todas as galáxias (posições determinísticas)
+    [400,1200].forEach(t=>setTimeout(()=>{try{graphInstance.fitView({padding:80})}catch(e){}}, t));
   }
-  // Reheat periódico: mantém o grafo "vivo" estilo Obsidian
+  // Reheat periódico: preset é no-op (posições fixas) — só re-zoom se perder o enquadre
   if(window._graphReheat)clearInterval(window._graphReheat);
-  window._graphReheat=setInterval(()=>{if(currentView==='graph'&&graphRunning){try{graphInstance.layout()}catch(e){} if(!SMALL){try{const z=graphInstance.getZoom();if(z<0.45){graphInstance.zoomTo(0.7)}}catch(e){}}}}, 25000);
+  window._graphReheat=setInterval(()=>{if(currentView==='graph'&&graphRunning){if(!SMALL){try{const z=graphInstance.getZoom();if(z<0.1){graphInstance.fitView({padding:80})}}catch(e){}}}}, 25000);
 }
 async function renderGraph(){
   const container=document.getElementById('graph-container');

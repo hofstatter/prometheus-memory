@@ -1,7 +1,7 @@
 /* Canvas v2 — chips de projeto, legenda, highlight de subgraph e cross-link p/ aba Projetos. */
 (function(){
   'use strict';
-  var S = { chips: [], selected: null, origSet: false };
+  var S = { chips: [], selected: null, userChoice: false, origSet: false };
 
   function esc(s){
     if (typeof window.escapeHtml === 'function') return window.escapeHtml(s);
@@ -35,6 +35,17 @@
         return { slug: p.slug, name: p.name || p.slug, progress: p.progress || 0 };
       });
       renderChips(el);
+      // Default (1ª carga apenas): mostra só o projeto mais ativo — Opção A
+      if (!S.userChoice && !S.selected){
+        var last = (data.projects || []).slice()
+          .filter(function(p){ return p.last_event_at; })
+          .sort(function(a,b){ return String(b.last_event_at).localeCompare(String(a.last_event_at)); })[0];
+        if (last && last.slug){
+          S.selected = last.slug;
+          renderChips(el);
+          setTimeout(function(){ selectCanvasFilter(last.slug); }, 80);
+        }
+      }
     }).catch(function(){});
   }
 
@@ -62,14 +73,46 @@
   }
 
   function selectCanvasFilter(slug){
+    S.userChoice = true;
     S.selected = slug === '__all__' ? null : slug;
     renderChips(document.getElementById('canvas-chips'));
-    var clusters = document.querySelectorAll('#mermaid-render g.cluster');
-    clusters.forEach(function(g){
-      if (!S.selected){ g.style.opacity = '1'; return; }
-      var label = clusterLabel(g);
-      var chip = S.chips.filter(function(c){ return c.slug === S.selected; })[0];
-      g.style.opacity = (chip && labelMatches(label, chip.name)) ? '1' : '0.15';
+    // Filtro server-side: re-renderiza o canvas com só o subgraph do projeto
+    // (sem arestas órfãs de outros projetos — o hack de display:none foi removido).
+    var url = S.selected ? '/api/canvas?project=' + encodeURIComponent(S.selected) : '/api/canvas';
+    fetch(url).then(function(r){ return r.json(); }).then(function(d){
+      if (!d || !d.mermaid){ return; }
+      renderCanvasMermaid(d.mermaid, d.age || '');
+    }).catch(function(){});
+  }
+
+  // Re-render do mermaid (filtro por projeto / Todos). Robusto: limpa o
+  // conteúdo anterior antes, usa id único, e captura erro de render.
+  function renderCanvasMermaid(mermaidSrc, ageText){
+    var el = document.getElementById('mermaid-render');
+    var age = document.getElementById('canvas-age');
+    if (!el) return;
+    el.innerHTML = '<div style="color:var(--ink-muted);text-align:center;padding:2rem">renderizando canvas...</div>';
+    var id = 'mmd-' + Date.now() + '-' + Math.floor(Math.random() * 1e6);
+    mermaid.render(id, mermaidSrc).then(function(res){
+      el.innerHTML = res.svg;
+      var s = el.querySelector('svg');
+      if (s && s.viewBox && s.viewBox.baseVal && s.viewBox.baseVal.width > 0){
+        s.style.width = s.viewBox.baseVal.width + 'px';
+        s.style.height = s.viewBox.baseVal.height + 'px';
+        s.style.maxWidth = 'none';
+      }
+      // re-registra os handlers de clique nos nós (sem re-carregar chips)
+      el.querySelectorAll('.node').forEach(function(n){
+        n.style.cursor = 'pointer';
+        n.onclick = function(e){ handleCanvasClick(e); };
+      });
+      if (age && ageText !== undefined) age.textContent = ageText;
+      if (typeof resetCanvasState === 'function') resetCanvasState();
+      if (typeof setupCanvasStage === 'function') setupCanvasStage();
+      setTimeout(function(){ if (typeof fitCanvas === 'function') fitCanvas(); }, 60);
+    }).catch(function(err){
+      el.innerHTML = '<div style="color:#ef4444;text-align:center;padding:2rem">Erro ao renderizar canvas: ' +
+        (err && err.message ? esc(err.message.slice(0, 120)) : 'desconhecido') + '</div>';
     });
   }
 

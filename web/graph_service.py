@@ -39,6 +39,99 @@ _TRIPLE_QUERY = """
 """
 _FACT_ID_RE = re.compile(r"^fact_([0-9a-fA-F]{12,})_\d+$")
 _THINK_RE = re.compile(r"<think>.*?</think>|<think>.*$", flags=re.DOTALL)
+_PROJECT_TAG_RE = re.compile(r"^\[([^\]]+)\]")
+
+# Paleta de projetos (fallback quando prometheus_projects.color não está disponível)
+PROJECT_COLORS = {
+    "nb02": "#22d3ee", "evscar": "#f472b6", "pipesales": "#3562fc",
+    "bytex": "#a78bfa", "provador-digital": "#34d399", "alook": "#fbbf24",
+    "ods": "#fb7185", "global": "#94a3b8", "entidades": "#38bdf8",
+}
+
+# Aliases de slug aceitos mesmo sem registro em prometheus_projects
+KNOWN_PROJECT_ALIASES = {
+    "nb02", "evscar", "pipesales", "bytex", "bytex_agentos", "alook",
+    "provador", "provador-digital", "prometheus-memory", "ods", "global",
+    "entidades",
+}
+
+
+_slug_cache = {"mtime": None, "slugs": None}
+
+
+def _load_valid_project_slugs() -> set:
+    """Slugs reais de prometheus_projects (fonte da verdade) + aliases conhecidos.
+    Cacheado por mtime do DB — evita N+1 conexões no _project_of por nó."""
+    global _slug_cache
+    mtime = None
+    try:
+        mtime = os.path.getmtime(MNEMOSYNE_DB)
+        if _slug_cache["mtime"] == mtime and _slug_cache["slugs"]:
+            return _slug_cache["slugs"]
+    except OSError:
+        pass
+    slugs = set(KNOWN_PROJECT_ALIASES)
+    try:
+        conn = _connect()
+        try:
+            rows = conn.execute("SELECT slug FROM prometheus_projects").fetchall()
+        finally:
+            conn.close()
+        slugs.update(r["slug"].strip().lower() for r in rows if r["slug"])
+    except Exception:
+        pass
+    _slug_cache = {"mtime": mtime, "slugs": slugs}
+    return slugs
+
+
+def _project_of(content: str, metadata_json: str = "") -> str:
+    """Extrai o projeto de uma memória.
+
+    Prioridade: campo `project` do metadata_json → prefixo '[tag]' do conteúdo.
+    Só aceita slugs de projetos REAIS (prometheus_projects + aliases conhecidos);
+    tags-lixo (syntaxerror, graph_service, session_registry, checkpoint-cycle...)
+    caem em 'global'. Ausência total → 'global'.
+    """
+    valid = _load_valid_project_slugs()
+    # 1. metadata_json.project (fonte mais confiável quando presente)
+    if metadata_json:
+        try:
+            import json as _json
+            m = _json.loads(metadata_json)
+            p = str(m.get("project") or "").strip().lower()
+            if p and p in valid:
+                return "bytex" if p == "bytex_agentos" else p
+        except Exception:
+            pass
+    # 2. prefixo [tag] do conteúdo
+    m = _PROJECT_TAG_RE.match((content or "").strip())
+    if m:
+        tag = m.group(1).strip().lower()
+        if tag.startswith("checkpoint-cycle"):
+            return "global"
+        if tag in valid:
+            # normaliza aliases → slug canônico
+            if tag == "bytex_agentos":
+                return "bytex"
+            return tag
+        return "global"
+    # 3. ausência
+    return "global"
+
+
+def _load_project_colors() -> dict:
+    """Lê slug → color de prometheus_projects (se a tabela existir)."""
+    try:
+        conn = _connect()
+        try:
+            rows = conn.execute(
+                "SELECT slug, color FROM prometheus_projects WHERE color IS NOT NULL"
+            ).fetchall()
+        finally:
+            conn.close()
+        return {r["slug"]: r["color"] for r in rows}
+    except Exception:
+        return {}
 
 
 def _connect() -> sqlite3.Connection:
@@ -87,11 +180,26 @@ def fetch_graph(limit: int = 250, include_entities: bool = True) -> dict:
 
         gist_map = {r["id"]: r for r in conn.execute("SELECT id, text, memory_id FROM gists").fetchall()}
         fact_map = {r["fact_id"]: r for r in conn.execute("SELECT fact_id, subject, predicate, object FROM facts").fetchall()}
-        memory_map = {r["id"]: r["content"] for r in conn.execute("SELECT id, content FROM memories").fetchall()}
+        try:
+            # metadata_json pode não existir em DBs antigos → fallback p/ metadata vazio
+            memory_map = {
+                r["id"]: {"content": r["content"], "metadata": r["metadata_json"] or ""}
+                for r in conn.execute("SELECT id, content, metadata_json FROM memories").fetchall()
+            }
+        except sqlite3.OperationalError:
+            memory_map = {
+                r["id"]: {"content": r["content"], "metadata": ""}
+                for r in conn.execute("SELECT id, content FROM memories").fetchall()
+            }
         entity_map = {
             r["name"]: r for r in conn.execute(
                 "SELECT id, name, type, mention_count FROM prometheus_entities").fetchall()
         } if include_entities else {}
+        # Mapa memory_id → projeto real (metadata.project → prefixo [tag] do conteúdo)
+        project_of_memory = {
+            mid: _project_of(v["content"], v["metadata"]) for mid, v in memory_map.items()
+        }
+        project_colors = _load_project_colors()
     finally:
         conn.close()
 
@@ -108,12 +216,13 @@ def fetch_graph(limit: int = 250, include_entities: bool = True) -> dict:
     for nid in node_ids:
         if nid.startswith("gist_") and nid in gist_map:
             g = gist_map[nid]
+            proj = project_of_memory.get(g["memory_id"] or "", "global")
             nodes.append({
                 "id": nid,
                 "label": _clean_text(g["text"])[:48],
                 "tier": "L2",
-                "color": "#3b82f6",
-                "project": "grafo",
+                "color": project_colors.get(proj, PROJECT_COLORS.get(proj, "#3b82f6")),
+                "project": proj,
                 "data": {
                     "type": "memory", "content": _clean_text(g["text"]),
                     "memory_id": g["memory_id"] or "", "degree": 0, "pagerank": 0.0,
@@ -122,25 +231,28 @@ def fetch_graph(limit: int = 250, include_entities: bool = True) -> dict:
         elif nid.startswith("fact_") and nid in fact_map:
             f = fact_map[nid]
             label = f"{f['subject']} → {f['object']}"[:48]
+            fmid = _fact_memory_id(nid)
+            proj = project_of_memory.get(fmid, "global")
             nodes.append({
                 "id": nid,
                 "label": label,
                 "tier": "L1",
-                "color": "#94a3b8",
-                "project": "grafo",
+                "color": project_colors.get(proj, PROJECT_COLORS.get(proj, "#94a3b8")),
+                "project": proj,
                 "data": {
                     "type": "memory", "content": label,
-                    "memory_id": _fact_memory_id(nid) or "", "degree": 0, "pagerank": 0.0,
+                    "memory_id": fmid, "degree": 0, "pagerank": 0.0,
                 },
             })
         elif nid in memory_map:
-            text = memory_map[nid]
+            text = memory_map[nid]["content"]
+            proj = project_of_memory.get(nid, "global")
             nodes.append({
                 "id": nid,
                 "label": _clean_text(text)[:48],
                 "tier": "L1",
-                "color": "#94a3b8",
-                "project": "grafo",
+                "color": project_colors.get(proj, PROJECT_COLORS.get(proj, "#94a3b8")),
+                "project": proj,
                 "data": {
                     "type": "memory", "content": _clean_text(text),
                     "memory_id": nid, "degree": 0, "pagerank": 0.0,
@@ -153,7 +265,7 @@ def fetch_graph(limit: int = 250, include_entities: bool = True) -> dict:
                 "label": nid,
                 "tier": "L3",
                 "color": ENTITY_TYPE_COLORS.get(ent["type"], "#a78bfa"),
-                "project": ent["type"] or "auto",
+                "project": "entidades",
                 "data": {
                     "type": "entity", "content": f"Entidade {ent['type']} · {ent['mention_count']} menções",
                     "memory_id": "", "degree": 0, "pagerank": 0.0,
@@ -225,6 +337,7 @@ def fetch_graph(limit: int = 250, include_entities: bool = True) -> dict:
     return {
         "nodes": nodes,
         "edges": result_edges,
+        "project_colors": project_colors,
         "analytics": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "node_count": len(nodes),

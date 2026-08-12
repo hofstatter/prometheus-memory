@@ -72,20 +72,70 @@ def parse_mnemosyne_output(raw: str) -> list:
         items.append(cur)
     return items
 
+_canonical_cache = {"mtime": None, "slugs": None}
+
+
+def _load_canonical_projects() -> set:
+    """Slugs canônicos de prometheus_projects (fonte da verdade), cacheado com
+    invalidação por mtime do DB — evita N+1 conexões ao varrer memórias.
+    O env PROMETHEUS_PROJECTS é ignorado (lista legada não-normalizada)."""
+    global _canonical_cache
+    mtime = None
+    try:
+        mtime = os.path.getmtime(MNEMOSYNE_DB)
+        if _canonical_cache["mtime"] == mtime and _canonical_cache["slugs"]:
+            return _canonical_cache["slugs"]
+    except OSError:
+        pass
+    try:
+        import sqlite3 as _sq
+        db = _sq.connect(str(MNEMOSYNE_DB), timeout=5)
+        try:
+            rows = db.execute("SELECT slug FROM prometheus_projects").fetchall()
+        finally:
+            db.close()
+        slugs = {r[0].strip().lower() for r in rows if r[0] and r[0].strip()}
+        if slugs:
+            _canonical_cache = {"mtime": mtime, "slugs": slugs}
+            return slugs
+    except Exception:
+        pass
+    # fallback mínimo (banco indisponível)
+    return {"alook", "bytex", "evscar", "nb02", "ods", "open-design",
+            "pipesales", "prometheus-memory", "provador-digital"}
+
+
 def extract_project(content: str) -> str:
+    """Extrai o projeto de uma memória, validado contra a lista canônica
+    (prometheus_projects). Tags-lixo/desconhecidas → DEFAULT_PROJECT.
+    Normaliza case: 'NB02' → 'nb02', 'Evscar' → 'evscar'."""
     import re
-    m = re.findall(r'\[(\w+)\]', content)
+    canonical = _load_canonical_projects()
+    if not canonical:
+        return DEFAULT_PROJECT
+    # 1. primeiro tag [x] do conteúdo
+    m = re.findall(r'\[(\w+)\]', content or "")
     for x in m:
-        if x.lower() not in ("unknown", "unk"):
-            return x
-    first = content.strip().split()[0] if content.strip() else ""
-    for k in KNOWN_PROJECTS:
+        if x.lower() in ("unknown", "unk"):
+            continue
+        low = x.lower()
+        if low in canonical:
+            return low
+        # caso: NB02 → nb02, bytex_agentos → bytex
+        if low == "bytex_agentos" and "bytex" in canonical:
+            return "bytex"
+    # 2. primeira palavra do conteúdo
+    first = (content or "").strip().split()[0] if (content or "").strip() else ""
+    for k in canonical:
         if k.lower() == first.lower():
             return k
-    for k in KNOWN_PROJECTS:
-        if k.lower() in content.lower():
+    # 3. contém nome de projeto conhecido
+    for k in canonical:
+        if k.lower() in (content or "").lower():
             return k
-    return DEFAULT_PROJECT
+    # 4. fallback neutro: memórias sem projeto identificável → 'global'
+    # (DEFAULT_PROJECT do env é legado — ex: 'NB02' — e poluiria o bucket)
+    return "global"
 
 # ─── Routes ────────────────────────────────────────
 
@@ -261,7 +311,69 @@ def canvas():
         mmd = f"stateDiagram-v2\n    [*] --> Mnemosyne\n    note right of Mnemosyne: {total} memorias\n    Mnemosyne --> [*]"
         age = "canvas ainda não gerado"
     from canvas_generator import mode_of
+    project = (request.args.get("project") or "").strip().lower()
+    if project and CANVAS_FILE.exists():
+        mmd = _filter_canvas_by_project(CANVAS_FILE.read_text(), project)
+        if mmd is None:
+            # Projeto registrado mas sem subgraph no canvas (sem eventos) → fallback
+            # informativo em vez de 404 (mantém o projeto visível, com aviso).
+            mmd = _fallback_canvas_for_project(project)
+            return jsonify({"mermaid": mmd, "age": age, "mode": "projects", "fallback": True})
     return jsonify({"mermaid": mmd, "age": age, "mode": mode_of(mmd)})
+
+
+def _fallback_canvas_for_project(slug: str) -> str:
+    """Mermaid mínimo do projeto quando não há eventos/subgraph: subgraph com 1
+    nó informativo (classDef backlog) — o projeto continua visível no canvas."""
+    import re as _re
+    sid = _re.sub(r"\W", "_", slug).upper()
+    name = slug.replace("-", " ").title()
+    import re as _re
+    name = _re.sub(r'["\\{}()\[\]#*<>|]', " ", name).strip() or "Projeto"
+    return (
+        "flowchart TD\n"
+        "  classDef backlog fill:#1e293b,stroke:#94a3b8,stroke-width:2px,color:#cbd5e1\n"
+        f'  subgraph {sid}["{name} · 0/0 done"]\n'
+        f'    {sid}0["📭 {name} — sem eventos registrados ainda"]:::backlog\n'
+        "  end\n"
+    )
+
+
+def _filter_canvas_by_project(mmd: str, slug: str) -> str | None:
+    """Extrai do canvas.mmd apenas o subgraph do projeto (mesmo _sid do generator:
+    slug → maiúsculas + não-alfanuméricos → '_') + as classDefs. Cross-edges entre
+    projetos ficam de fora (cada projeto é visto isolado)."""
+    import re as _re
+    sid = _re.sub(r"\W", "_", slug).upper()
+    lines = mmd.splitlines()
+    header = []
+    classdefs = []
+    block = []
+    in_block = False
+    found = False
+    for ln in lines:
+        s = ln.strip()
+        if s.startswith("flowchart") or s.startswith("graph ") or s.startswith("stateDiagram"):
+            header.append(ln)
+        elif s.startswith("classDef "):
+            classdefs.append(ln)
+        elif s.startswith("subgraph "):
+            # subgraph SID[...] → fecha bloco anterior, abre o do projeto se bater
+            in_block = False
+            m = _re.match(r"subgraph\s+([A-Z0-9_]+)", s)
+            if m and m.group(1) == sid:
+                in_block = True
+                found = True
+                block.append(ln)
+        elif in_block:
+            if s == "end":
+                in_block = False
+                block.append(ln)
+            else:
+                block.append(ln)
+    if not found or not block:
+        return None
+    return "\n".join(header + classdefs + block)
 
 @app.route("/api/canvas/projects")
 def canvas_projects():
@@ -624,16 +736,27 @@ def stats():
 
 @app.route("/api/projects")
 def projects():
-    query = " ".join(KNOWN_PROJECTS) if KNOWN_PROJECTS else "implementacao decisao config correcao plano"
-    raw = run_mnemosyne("recall", query, "100")
-    memories = parse_mnemosyne_output(raw)
-    proj_set = set()
-    for m in memories:
-        content_lower = m.get("content", "").lower()
-        if any(ex in content_lower for ex in EXCLUDED_CONTENT):
-            continue
-        proj_set.add(extract_project(m.get("content", "")))
-    return jsonify(sorted(proj_set))
+    """Lista canônica de projetos (fonte da verdade = prometheus_projects) com
+    contagem real de memórias. Projetos com 0 memórias APARECEM mesmo assim
+    (visão do ecossistema). Contagem via SQL direto (rápido e exato)."""
+    canonical = _load_canonical_projects()
+    # contagem por memória: extrai o projeto validado de cada memória
+    counts: dict = {p: 0 for p in canonical}
+    try:
+        import sqlite3 as _sq
+        db = _sq.connect(str(MNEMOSYNE_DB), timeout=10)
+        try:
+            rows = db.execute("SELECT content FROM memories").fetchall()
+        finally:
+            db.close()
+        for (content,) in rows:
+            p = extract_project(content or "")
+            if p in counts:
+                counts[p] += 1
+    except Exception:
+        pass
+    result = [{"slug": slug, "count": counts.get(slug, 0)} for slug in sorted(counts)]
+    return jsonify(result)
 
 # ─── API: Memory detail ────────────────────────────
 

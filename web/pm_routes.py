@@ -346,7 +346,9 @@ def pm_project_mcps(slug):
                         })
                 except Exception:
                     pass
-        for dc_name in ("docker-compose.yml", "docker-compose.yaml", "compose.yaml", "compose.yml"):
+        for dc_name in ("docker-compose.yml", "docker-compose.yaml", "compose.yaml", "compose.yml",
+                        "docker/docker-compose.yml", "docker/docker-compose.yaml",
+                        "docker/compose.yaml", "docker/compose.yml"):
             dc = root / dc_name
             if dc.exists():
                 try:
