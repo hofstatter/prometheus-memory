@@ -27,8 +27,29 @@ def _get_embed_model():
     return _embed_model
 
 def _check_auth():
+    """Valida Bearer: token global (admin/tenant 1) OU API key de agente (multi-tenant F5)."""
     auth = request.headers.get("Authorization", "")
-    return auth == f"Bearer {TOKEN}"
+    if auth == f"Bearer {TOKEN}":
+        request.environ["pm_identity"] = {"role": "admin", "tenant_id": 1, "agent_id": None}
+        return True
+    key = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else ""
+    if key:
+        try:
+            from auth_gateway import validate_key
+            info = validate_key(key)
+            if info:
+                request.environ["pm_identity"] = {"role": "agent", **info}
+                return True
+        except Exception:
+            pass
+    return False
+
+
+@app.route("/whoami", methods=["GET"])
+def whoami():
+    if not _check_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    return jsonify({"identity": request.environ.get("pm_identity", {})})
 
 @app.route("/health", methods=["GET"])
 def health():

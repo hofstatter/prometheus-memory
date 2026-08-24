@@ -5,6 +5,27 @@ plano. Seção nova no topo. Cada entrada: contexto, decisão, evidência, statu
 
 ---
 
+## 24/08/2026 — D13: PostgreSQL = storage do PROMETHEUS-MEMORY (não fork do Mnemosyne upstream)
+
+**Contexto:** plano `PLAN_POSTGRES_MULTITENANT_ATLAS.md` (F2 = "backend PG do Mnemosyne core"). Auditoria (F0) + inspeção do package **`mnemosyne-memory 3.16.0`** (pin `c4344f2d`) no container: o upstream **NÃO tem backend PostgreSQL** — usa `sqlite3`/extensão `vec0` (sqlite-vec)/FTS5 **direto em dezenas de módulos** (`core/memory.py`, `core/banks.py`, `core/beam.py`, `core/embeddings.py`, `cli.py`...), apenas `db_path` (sem `DATABASE_URL`/abstração de storage).
+
+- **D13 — O PG vira o storage do Prometheus-Memory (nosso produto), NÃO um fork do Mnemosyne.**
+  O Mnemosyne core permanece como **motor local de memória/embeddings** (SQLite, rápido, zero-dep),
+  e o Prometheus-Memory (sidecar `prometheus_*` + API :8766 + Atlas + Web UI) passa a usar o
+  **PostgreSQL** como banco principal dos agentes (multi-tenant, concorrência, robustez).
+  Fork completo do storage do Mnemosyne para PG = **inviável/responsável** (sem camada de
+  abstração; semanas de trabalho; quebraria updates do upstream).
+- **F2 entregue como:** schema PG aplicado (tabelas core `working_memory`/`episodic_memory`/
+  `triples`/`graph_edges` + `tenants`/`agents` + sidecar, com **tenant_id**, **pgvector(384) HNSW**,
+  **tsvector GIN**) + módulo `web/pg_backend.py` (store/recall vetorial+fts/triple/edge/stats,
+  psycopg2, `PROMETHEUS_PG_URL`). Smoke OK (store + stats; recall fts vazio por tokenização —
+  recall vetorial é o caminho principal).
+- **Evidência:** `migrations/001_schema_pg.sql` · `web/pg_backend.py` · PostgreSQL 16.15 +
+  pgvector 0.8.6 (container `prometheus-pg`, :5432) · pgBouncer :6432.
+- **Status:** ✅ aplicada (F2). Próximo: F3 (sidecar em PG) · F5 (multi-tenant + RLS + API keys).
+
+---
+
 ## 08/08/2026 — D9–D12: knob `MNEMOSYNE_LEXICAL_GATE_MIN` (PR #639 MERGED upstream) em produção
 
 **Contexto:** PR #639 (autoria hofstatter) **mergeado no upstream** `mnemosyne-oss/mnemosyne`

@@ -194,7 +194,13 @@ CREATE TABLE IF NOT EXISTS prometheus_project_reports (
 _init_done = False
 
 
-def get_conn() -> sqlite3.Connection:
+def get_conn():
+    """Retorna conexão: PostgreSQL (se PROMETHEUS_PG_URL) ou SQLite (fallback/espelho)."""
+    import os as _os
+    from pg_adapter import PGSQLiteCompat
+    url = _os.environ.get("PROMETHEUS_PG_URL", "").strip()
+    if url:
+        return PGSQLiteCompat(url)
     con = sqlite3.connect(str(DB_PATH), timeout=10)
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA busy_timeout=5000")
@@ -208,11 +214,13 @@ def init_schema() -> None:
     if _init_done:
         return
     con = get_conn()
-    con.executescript(SCHEMA)
-    _migrate_entities_canonical(con)
-    _migrate_tech_profile_systemd(con)
-    con.commit()
-    con.close()
+    try:
+        con.executescript(SCHEMA)
+        _migrate_entities_canonical(con)
+        _migrate_tech_profile_systemd(con)
+        con.commit()
+    finally:
+        con.close()
     _init_done = True
 
 

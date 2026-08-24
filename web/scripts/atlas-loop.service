@@ -1,0 +1,18 @@
+[Unit]
+Description=Atlas Neuron Loop — memória pró-ativa (percepção→decisão→ação→descanso)
+After=network-online.target docker.service
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=~/atlas-scripts
+EnvironmentFile=/opt/prometheus/.env
+ExecStart=~/atlas-venv/bin/python3 ~/atlas-scripts/atlas_loop.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

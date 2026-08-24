@@ -90,6 +90,7 @@ def _diario() -> sqlite3.Connection:
     DIARIO_DB.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DIARIO_DB))
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")  # concorrência MCP + loop
     conn.execute("""CREATE TABLE IF NOT EXISTS atlas_diario (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ts TEXT, entry TEXT, kind TEXT DEFAULT 'reflexao')""")

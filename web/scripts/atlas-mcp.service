@@ -1,0 +1,18 @@
+[Unit]
+Description=Atlas MCP Server (:8768) — memória para agentes (SSE)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=~/atlas-scripts
+EnvironmentFile=/opt/prometheus/.env
+Environment=ATLAS_MCP_PORT=8768
+Environment=ATLAS_DIARIO_DB=/data/atlas/atlas_diario.db
+ExecStart=~/atlas-venv/bin/python3 ~/atlas-scripts/atlas_memory_agent.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
