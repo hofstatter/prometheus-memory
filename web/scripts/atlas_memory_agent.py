@@ -200,21 +200,20 @@ Regra de ouro: o agente DEVE lembrar sozinho — nunca esperar o humano pedir.
 
 
 def main() -> int:
-    from mcp.server.fastmcp import FastMCP
-    import uvicorn
-    mcp = FastMCP("atlas-memory-agent", host="0.0.0.0")
+    from fastmcp import FastMCP
+    mcp = FastMCP("atlas-memory-agent")
 
-    @mcp.prompt()
+    @mcp.prompt
     def auto_memory() -> str:
         """Instruções de pro-atividade para qualquer agente conectado."""
         return AUTO_MEMORY_PROMPT
 
-    mcp.tool()(atlas_recall)
-    mcp.tool()(atlas_remember)
-    mcp.tool()(atlas_insights)
-    mcp.tool()(atlas_diario)
-    mcp.tool()(atlas_consolidar)
-    uvicorn.run(mcp.sse_app(), host="0.0.0.0", port=int(os.environ.get("ATLAS_MCP_PORT", "8768")))
+    mcp.tool(atlas_recall)
+    mcp.tool(atlas_remember)
+    mcp.tool(atlas_insights)
+    mcp.tool(atlas_diario)
+    mcp.tool(atlas_consolidar)
+    mcp.run(transport="sse", host="0.0.0.0", port=int(os.environ.get("ATLAS_MCP_PORT", "8768")))
     return 0
 
 

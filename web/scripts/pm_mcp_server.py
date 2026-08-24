@@ -25,7 +25,7 @@ import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
-HOST = "127.0.0.1"
+HOST = os.environ.get("PROMETHEUS_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PROMETHEUS_PORT", "8777"))
 BASE = f"http://{HOST}:{PORT}"
 WEB_ENV = Path(os.environ.get("PROMETHEUS_WEB_ENV", str(Path.home() / "Projetos" / "web" / ".env")))
@@ -183,12 +183,12 @@ def _selftest() -> int:
 def main() -> int:
     if "--selftest" in sys.argv:
         return _selftest()
-    from mcp.server.fastmcp import FastMCP
+    from fastmcp import FastMCP
 
     mcp = FastMCP("prometheus-pm")
-    mcp.tool()(pm_event)
-    mcp.tool()(pm_session)
-    mcp.tool()(pm_tasks)
+    mcp.tool(pm_event)
+    mcp.tool(pm_session)
+    mcp.tool(pm_tasks)
     mcp.run(transport="stdio")
     return 0
 
