@@ -32,6 +32,55 @@ PERSONA = (
     "Foco: memória de longo prazo, aprendizado contínuo, pro-atividade."
 )
 
+DOCS_DIR = Path(os.environ.get("DOCS_DIR", "/data/docs"))
+
+_DOC_TIPOS = [
+    ("plano",      re.compile(r"plan", re.I)),
+    ("relatorio",  re.compile(r"relatorio|relatório", re.I)),
+    ("checkpoint", re.compile(r"checkpoint", re.I)),
+    ("estado",     re.compile(r"^state", re.I)),
+    ("contexto",   re.compile(r"^context", re.I)),
+    ("decisao",    re.compile(r"decisions", re.I)),
+]
+
+
+def _doc_tipo(name: str) -> str:
+    for tipo, rx in _DOC_TIPOS:
+        if rx.search(name):
+            return tipo
+    return "doc"
+
+
+def _docs_scan() -> list:
+    """Varre DOCS_DIR (filesystem direto) e devolve lista de dicts."""
+    out = []
+    if not DOCS_DIR.is_dir():
+        return out
+    for f in sorted(DOCS_DIR.rglob("*.md")):
+        try:
+            rel = str(f.relative_to(DOCS_DIR))
+        except ValueError:
+            continue
+        parts = Path(rel).parts
+        projeto = parts[0] if len(parts) > 1 else "raiz"
+        first = ""
+        try:
+            for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.strip() and not line.lstrip().startswith("#"):
+                    first = line.strip()[:120]
+                    break
+        except OSError:
+            continue
+        out.append({
+            "path": rel,
+            "projeto": projeto,
+            "tipo": _doc_tipo(Path(rel).name),
+            "size": f.stat().st_size,
+            "first_line": first,
+            "mtime": datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc).isoformat(timespec="seconds"),
+        })
+    return out
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -191,6 +240,75 @@ def atlas_consolidar(force: bool = False) -> dict:
     return {"ok": True, "processados": status.get("items_consolidated", 0), "resumo": resumo[:300], "licao": licao or "(sem LLM)"}
 
 
+def atlas_docs_index() -> dict:
+    """Varre /data/docs e monta/atualiza o indice de documentos .md no diario (por projeto/tipo)."""
+    docs = _docs_scan()
+    diag = _diario()
+    diag.execute("""CREATE TABLE IF NOT EXISTS atlas_docs_index (
+        path TEXT PRIMARY KEY, projeto TEXT, tipo TEXT, size INTEGER,
+        first_line TEXT, mtime TEXT, indexed_at TEXT)""")
+    now = _now_iso()
+    for d in docs:
+        diag.execute(
+            "INSERT INTO atlas_docs_index (path, projeto, tipo, size, first_line, mtime, indexed_at) "
+            "VALUES (?,?,?,?,?,?,?) ON CONFLICT(path) DO UPDATE SET "
+            "projeto=excluded.projeto, tipo=excluded.tipo, size=excluded.size, "
+            "first_line=excluded.first_line, mtime=excluded.mtime, indexed_at=excluded.indexed_at",
+            (d["path"], d["projeto"], d["tipo"], d["size"], d["first_line"], d["mtime"], now),
+        )
+    diag.commit()
+    por_projeto, por_tipo = {}, {}
+    for d in docs:
+        por_projeto[d["projeto"]] = por_projeto.get(d["projeto"], 0) + 1
+        por_tipo[d["tipo"]] = por_tipo.get(d["tipo"], 0) + 1
+    return {"total": len(docs), "por_projeto": por_projeto, "por_tipo": por_tipo, "ts": now}
+
+
+def atlas_docs_insights(projeto: str = "", tipo: str = "", max_docs: int = 10) -> dict:
+    """Gera insights (resumo+temas+links+flags) dos docs .md via DeepSeek, grava no diario."""
+    docs = _docs_scan()
+    if projeto:
+        docs = [d for d in docs if d["projeto"] == projeto]
+    if tipo:
+        docs = [d for d in docs if d["tipo"] == tipo]
+    docs = docs[:max_docs]
+    if not docs:
+        return {"ok": False, "erro": "nenhum doc encontrado com os filtros"}
+    if not DEEPSEEK_API_KEY:
+        return {"ok": False, "erro": "DEEPSEEK_API_KEY nao configurado no ambiente do Atlas"}
+    corpus = []
+    for d in docs:
+        try:
+            txt = (DOCS_DIR / d["path"]).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        corpus.append(f"### {d['path']} ({d['tipo']}, {d['projeto']})\n"
+                      + "\n".join(txt.splitlines()[:80])[:4000])
+    prompt = [
+        {"role": "system", "content": PERSONA + "\nVoce analisa a base de documentacao do ecossistema."},
+        {"role": "user", "content": (
+            "Analise os documentos abaixo e produza SOMENTE JSON valido com:\n"
+            '{"resumo_por_doc":[{"path":"...","resumo":"1 frase"}],'
+            '"temas":["3-5 temas recorrentes"],'
+            '"links":[{"a":"doc1","b":"doc2","relacao":"..."}],'
+            '"flags":["desatualizacoes/inconsistencias"]}\n\n'
+            + "\n\n".join(corpus)
+        )},
+    ]
+    raw = _llm(prompt, max_tokens=3000).strip()
+    data = {}
+    try:
+        m = re.search(r"\{.*\}", raw, re.S)
+        data = json.loads(m.group(0)) if m else {"raw": raw[:500]}
+    except json.JSONDecodeError:
+        data = {"raw": raw[:500]}
+    diag = _diario()
+    diag.execute("INSERT INTO atlas_diario (ts, entry, kind) VALUES (?, ?, 'insight-docs')",
+                 (_now_iso(), json.dumps(data, ensure_ascii=False)[:500]))
+    diag.commit()
+    return {"ok": True, "analisados": len(corpus), "insights": data, "ts": _now_iso()}
+
+
 AUTO_MEMORY_PROMPT = """REGRA DE PRO-ATIVIDADE (obrigatória, automática — sem o humano pedir):
 1. INICIO DE SESSÃO: chame atlas_recall("ultimas decisoes e contexto") para recuperar memorias relevantes + docs_read("STATE.md") via MCP :8767 para ler o estado.
 2. DURANTE: chame atlas_remember() apos cada decisao, implementacao ou fato importante.
@@ -213,6 +331,8 @@ def main() -> int:
     mcp.tool(atlas_insights)
     mcp.tool(atlas_diario)
     mcp.tool(atlas_consolidar)
+    mcp.tool(atlas_docs_index)
+    mcp.tool(atlas_docs_insights)
     mcp.run(transport="sse", host="0.0.0.0", port=int(os.environ.get("ATLAS_MCP_PORT", "8768")))
     return 0
 
