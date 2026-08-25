@@ -278,9 +278,9 @@ def canvas():
         con = get_conn()
         try:
             row = con.execute(
-                "SELECT MAX(created_at) FROM prometheus_project_events"
+                "SELECT MAX(created_at) AS latest_ts FROM prometheus_project_events"
             ).fetchone()
-            latest = row[0] if row else None
+            latest = row["latest_ts"] if row else None
         except Exception:
             latest = None
         finally:
