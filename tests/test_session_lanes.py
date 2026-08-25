@@ -110,7 +110,7 @@ def test_t4b_presence_idle_to_stale():
 
 def test_t5_resolver():
     _reload_all()
-    assert projects_registry.resolve_project(cwd="~/Projetos/evscar")["slug"] == "evscar"
+    assert projects_registry.resolve_project(cwd="/tmp/projetos/evscar")["slug"] == "evscar"
     assert projects_registry.resolve_project(project_slug="Evscar!@")["slug"] == "evscar"
     assert projects_registry.resolve_project(project_slug="Evscar!@")["confidence"] == 1.0
     r = projects_registry.resolve_project(text="nenhum sinal de projeto aqui")

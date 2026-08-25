@@ -17,3 +17,16 @@ web/mnemosyne-doctor.*
 PLAN_ATLAS_CAMINHO_A.md
 PLAN_ATLAS_NEURONIO_LOOP.md
 RELATORIO_IMPLEMENTACAO_CAMINHO_A_ATLAS_23AGO2026.md
+
+# Dados locais/privados NUNCA sobem (Regra 21)
+backups/
+*.tar.gz
+*.tgz
+*.zip
+*.env.bak
+*.dump
+*.db
+*.sqlite
+*.pem
+*.key
+*.crt
