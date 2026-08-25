@@ -272,21 +272,19 @@ def canvas():
             sys.path.insert(0, str(_sc))
     # Regen-if-stale: canvas.mmd velho + eventos novos → regenera na hora (self-healing).
     try:
-        import sqlite3
         from canvas_generator import main as regen_canvas, mode_of
-        from prometheus_db import DB_PATH
+        from prometheus_db import DB_PATH, get_conn
         latest = None
-        if DB_PATH.exists():
-            con = sqlite3.connect(str(DB_PATH), timeout=10)
-            try:
-                row = con.execute(
-                    "SELECT MAX(created_at) FROM prometheus_project_events"
-                ).fetchone()
-                latest = row[0] if row else None
-            except sqlite3.OperationalError:
-                latest = None
-            finally:
-                con.close()
+        con = get_conn()
+        try:
+            row = con.execute(
+                "SELECT MAX(created_at) FROM prometheus_project_events"
+            ).fetchone()
+            latest = row[0] if row else None
+        except Exception:
+            latest = None
+        finally:
+            con.close()
         if latest and (not CANVAS_FILE.exists() or CANVAS_FILE.stat().st_mtime < datetime.fromisoformat(str(latest)).timestamp()):
             regen_canvas()
     except Exception as e:

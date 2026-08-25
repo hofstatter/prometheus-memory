@@ -35,7 +35,13 @@ def _conv(sql: str) -> str:
             out.append("%s")
         else:
             out.append(ch)
-    return "".join(out)
+    s = "".join(out)
+    # INSERT OR IGNORE (sqlite) -> INSERT ... ON CONFLICT DO NOTHING (PG)
+    import re as _re
+    s = _re.sub(r"\bINSERT\s+OR\s+IGNORE\s+INTO\b", "INSERT INTO", s, flags=_re.I)
+    if _re.search(r"\bINSERT\s+OR\s+IGNORE\b", sql, _re.I):
+        s = s.rstrip().rstrip(";") + " ON CONFLICT DO NOTHING"
+    return s
 
 
 class PGSQLiteCompat:
