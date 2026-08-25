@@ -6,11 +6,11 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=~/atlas-scripts
+WorkingDirectory=%h/atlas-scripts
 EnvironmentFile=/opt/prometheus/.env
 Environment=DOCS_MCP_PORT=8767
 Environment=DOCS_DIR=/data/docs
-ExecStart=~/atlas-venv/bin/python3 ~/atlas-scripts/docs_mcp_server.py
+ExecStart=%h/atlas-venv/bin/python3 %h/atlas-scripts/docs_mcp_server.py
 Restart=on-failure
 RestartSec=10
 
