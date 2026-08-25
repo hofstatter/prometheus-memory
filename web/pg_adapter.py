@@ -14,9 +14,6 @@ from __future__ import annotations
 import os
 import re
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
-
 PG_URL = os.environ.get(
     "PROMETHEUS_PG_URL",
     "postgresql://prometheus@127.0.0.1:5432/prometheus_memory",
@@ -48,12 +45,17 @@ class PGSQLiteCompat:
     """Emula a interface sqlite3.Connection suficiente para o prometheus_db.py."""
 
     def __init__(self, url: str = PG_URL):
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+
         self._conn = psycopg2.connect(url)
         self._conn.autocommit = False
         self.row_factory = None  # RealDictCursor já entrega dicts
 
     # ---------- execução ----------
-    def cursor(self) -> psycopg2.extensions.cursor:
+    def cursor(self):
+        from psycopg2.extras import RealDictCursor
+
         return self._conn.cursor(cursor_factory=RealDictCursor)
 
     def execute(self, sql: str, params=()):
