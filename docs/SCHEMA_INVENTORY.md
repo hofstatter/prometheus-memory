@@ -61,3 +61,17 @@
 3. **F3** — sidecar `prometheus_*` em PG (o `prometheus_db.py` troca o driver sqlite3 → SQLAlchemy/PG).
 4. **F4** — dump SQLite → transform → `psql` (com `tenant_id=default`); espelho 1 semana; SQLite desligado (arquivo mantido).
 5. **F5** — multi-tenant + RLS + Auth Gateway (tenants/agents/api_keys).
+
+## 6. NÃO versionado (reproduzibilidade — ressalva B do Inspetor, 24/08)
+
+Estes itens estão em **produção (VM 101 / R620) mas FORA do repositório git** — o clone não reconstrói o sistema sozinho:
+
+| Item | Caminho (produção) | Por que não versionado |
+|---|---|---|
+| `.env` (secrets) | `/opt/prometheus/.env` | contém chaves reais (DeepSeek/Firecrawl/MCP) — nunca versionar |
+| `pg_config.json` | container `/app/scripts/pg_config.json` | URL do PG com senha |
+| Units systemd reais | `/etc/systemd/system/atlas-loop.service`, `atlas-mcp.service`, `docs-mcp.service` | templates no repo (`web/scripts/*.service`); os reais têm `EnvironmentFile`/`User=root` |
+| Cron root | `/usr/local/bin/backup-pg.sh`, `pg-mirror.sh` + crontab | scripts operacionais (o `validate_mirror.py` está no repo) |
+| Containers | `prometheus-pg`, `prometheus-pgbouncer`, `prometheus-memory` | infra Docker (definição operacional, não código-fonte) |
+
+> **Reconstrução:** aplicar `migrations/*.sql` + rodar `backup-pg.sh`/`pg-mirror.sh` + criar units a partir dos templates + configurar `.env` com as chaves.
