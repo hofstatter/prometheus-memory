@@ -12,3 +12,8 @@ node_modules/
 evals/data/
 # artefatos de diagnostico gerados (D7)
 web/mnemosyne-doctor.*
+
+# Docs com infra interna (segurança) — manter LOCAL, fora do repo publico
+PLAN_ATLAS_CAMINHO_A.md
+PLAN_ATLAS_NEURONIO_LOOP.md
+RELATORIO_IMPLEMENTACAO_CAMINHO_A_ATLAS_23AGO2026.md
